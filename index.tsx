@@ -4,7 +4,7 @@ import {
   Menu, X, Globe, ShoppingCart, User, Wheat, MapPin, Phone, Mail, 
   ChevronRight, ChevronLeft, Plus, Trash2, Edit, CheckCircle, Search,
   Facebook, Twitter, Instagram, Linkedin, Factory, Truck, Award,
-  Calendar, Briefcase, FileText, Upload, Clock, ArrowRight
+  Calendar, Briefcase, FileText, Upload, Clock, ArrowRight, Save, Image as ImageIcon
 } from 'lucide-react';
 
 // --- TYPES & INTERFACES ---
@@ -280,7 +280,12 @@ const TRANSLATIONS = {
     submit_app: 'إرسال الطلب',
     app_success: 'تم استلام طلب التوظيف بنجاح.',
     location: 'الموقع',
-    date: 'التاريخ'
+    date: 'التاريخ',
+    edit: 'تعديل',
+    delete: 'حذف',
+    add_new: 'إضافة جديد',
+    cancel: 'إلغاء',
+    save: 'حفظ'
   },
   en: {
     brand: 'Al-Shifa Mills',
@@ -335,7 +340,12 @@ const TRANSLATIONS = {
     submit_app: 'Submit Application',
     app_success: 'Application submitted successfully.',
     location: 'Location',
-    date: 'Date'
+    date: 'Date',
+    edit: 'Edit',
+    delete: 'Delete',
+    add_new: 'Add New',
+    cancel: 'Cancel',
+    save: 'Save'
   }
 };
 
@@ -388,6 +398,25 @@ class FirebaseService {
 }
 
 // --- COMPONENTS ---
+
+// Generic Modal Component
+const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children?: React.ReactNode }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative z-10 animate-in fade-in zoom-in-95 duration-200">
+        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+          <h3 className="text-xl font-bold">{title}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full"><X size={20}/></button>
+        </div>
+        <div className="p-6">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Header = () => {
   const { lang, setLang, view, setView, cart, user, logout } = useContext(AppContext);
@@ -548,7 +577,6 @@ const CareersView = () => {
 
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate upload delay
     setTimeout(() => {
       setAppSent(true);
       setTimeout(() => {
@@ -624,7 +652,6 @@ const CareersView = () => {
                      <Upload size={24} className="mx-auto text-stone-400 group-hover:text-brand-500 mb-2"/>
                      <span className="text-xs text-stone-500">Click to upload file</span>
                      <input type="file" accept=".pdf,.doc,.docx" className="hidden" /> 
-                     {/* In real app, bind click to file input */}
                   </div>
                </div>
                <button className="w-full bg-brand-600 text-white py-3 rounded-lg font-bold hover:bg-brand-700 transition shadow-lg mt-4">
@@ -831,13 +858,61 @@ const CartView = () => {
 
 const AdminPanel = () => {
   const { lang, products, setProducts, news, setNews, events, setEvents, jobs, setJobs } = useContext(AppContext);
-  const [tab, setTab] = useState('products'); 
+  const t = TRANSLATIONS[lang];
+  const [tab, setTab] = useState('products');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
 
-  // Generic delete mock
-  const deleteItem = (id: string, list: any[], setter: any) => {
-    if(confirm('Are you sure you want to delete this item?')) {
+  // Form State
+  const [formData, setFormData] = useState<any>({});
+
+  const handleEdit = (item: any) => {
+    setEditingItem(item);
+    setFormData({...item});
+    setIsModalOpen(true);
+  };
+
+  const handleAdd = () => {
+    setEditingItem(null);
+    setFormData({});
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (id: string, list: any[], setter: any) => {
+    if(confirm(t.delete + '?')) {
       setter(list.filter((i: any) => i.id !== id));
     }
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newItem = {
+      ...formData,
+      id: editingItem ? editingItem.id : Math.random().toString(36).substr(2, 9),
+      // Set defaults for specific types if new
+      ...(tab === 'jobs' && !editingItem ? { postedDate: new Date().toISOString().split('T')[0] } : {})
+    };
+
+    if (tab === 'products') {
+      if (editingItem) setProducts(products.map(p => p.id === newItem.id ? newItem : p));
+      else setProducts([...products, newItem]);
+    } else if (tab === 'news') {
+      if (editingItem) setNews(news.map(n => n.id === newItem.id ? newItem : n));
+      else setNews([...news, newItem]);
+    } else if (tab === 'events') {
+      if (editingItem) setEvents(events.map(ev => ev.id === newItem.id ? newItem : ev));
+      else setEvents([...events, newItem]);
+    } else if (tab === 'jobs') {
+      if (editingItem) setJobs(jobs.map(j => j.id === newItem.id ? newItem : j));
+      else setJobs([...jobs, newItem]);
+    }
+
+    setIsModalOpen(false);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
   return (
@@ -861,11 +936,14 @@ const AdminPanel = () => {
         <div className="flex-1 bg-white rounded-xl shadow-sm border border-stone-200 p-8 min-h-[500px]">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-bold capitalize text-stone-800">{tab} Management</h2>
-            <button className="bg-brand-600 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 hover:bg-brand-700 font-bold shadow-md transition">
-              <Plus size={18} /> Add New
-            </button>
+            {['products', 'news', 'events', 'jobs'].includes(tab) && (
+              <button onClick={handleAdd} className="bg-brand-600 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 hover:bg-brand-700 font-bold shadow-md transition">
+                <Plus size={18} /> {t.add_new}
+              </button>
+            )}
           </div>
 
+          {/* LISTS */}
           {tab === 'products' && (
             <div className="overflow-x-auto rounded-lg border border-stone-200">
               <table className="w-full text-left border-collapse">
@@ -886,8 +964,8 @@ const AdminPanel = () => {
                       <td className="p-4 text-stone-600">{p.weight}</td>
                       <td className="p-4 text-green-600"><CheckCircle size={18} /></td>
                       <td className="p-4 flex gap-2">
-                        <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={18}/></button>
-                        <button onClick={() => deleteItem(p.id, products, setProducts)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18}/></button>
+                        <button onClick={() => handleEdit(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={18}/></button>
+                        <button onClick={() => handleDelete(p.id, products, setProducts)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18}/></button>
                       </td>
                     </tr>
                   ))}
@@ -907,7 +985,10 @@ const AdminPanel = () => {
                        <span className="text-xs text-stone-500">{item.date}</span>
                      </div>
                    </div>
-                   <button onClick={() => deleteItem(item.id, news, setNews)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18}/></button>
+                   <div className="flex gap-2">
+                     <button onClick={() => handleEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={18}/></button>
+                     <button onClick={() => handleDelete(item.id, news, setNews)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18}/></button>
+                   </div>
                  </div>
                ))}
              </div>
@@ -924,7 +1005,10 @@ const AdminPanel = () => {
                         <span className="flex items-center gap-1"><MapPin size={12}/> {item.location_en}</span>
                      </div>
                    </div>
-                   <button onClick={() => deleteItem(item.id, events, setEvents)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18}/></button>
+                   <div className="flex gap-2">
+                     <button onClick={() => handleEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={18}/></button>
+                     <button onClick={() => handleDelete(item.id, events, setEvents)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18}/></button>
+                   </div>
                  </div>
                ))}
              </div>
@@ -941,7 +1025,10 @@ const AdminPanel = () => {
                         <span className="bg-stone-100 px-2 py-0.5 rounded">{item.type_en}</span>
                      </div>
                    </div>
-                   <button onClick={() => deleteItem(item.id, jobs, setJobs)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18}/></button>
+                   <div className="flex gap-2">
+                     <button onClick={() => handleEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={18}/></button>
+                     <button onClick={() => handleDelete(item.id, jobs, setJobs)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18}/></button>
+                   </div>
                  </div>
                ))}
              </div>
@@ -950,6 +1037,94 @@ const AdminPanel = () => {
           {tab === 'orders' && <div className="text-center py-20 text-stone-400">No new orders received today.</div>}
         </div>
       </div>
+
+      {/* Dynamic Modal Form */}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title={editingItem ? `${t.edit} ${tab}` : `${t.add_new} ${tab}`}
+      >
+        <form onSubmit={handleSave} className="space-y-4">
+          
+          {/* PRODUCT FORM */}
+          {tab === 'products' && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-sm font-bold">Name (AR)</label><input required name="name_ar" defaultValue={editingItem?.name_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+                <div><label className="text-sm font-bold">Name (EN)</label><input required name="name_en" defaultValue={editingItem?.name_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-sm font-bold">Category</label><input required name="category" defaultValue={editingItem?.category} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+                <div><label className="text-sm font-bold">Weight</label><input required name="weight" defaultValue={editingItem?.weight} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+              </div>
+               <div><label className="text-sm font-bold">Image URL</label><input required name="imageUrl" defaultValue={editingItem?.imageUrl} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               <div><label className="text-sm font-bold">Desc (AR)</label><textarea name="description_ar" defaultValue={editingItem?.description_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               <div><label className="text-sm font-bold">Desc (EN)</label><textarea name="description_en" defaultValue={editingItem?.description_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+            </>
+          )}
+
+          {/* NEWS FORM */}
+          {tab === 'news' && (
+             <>
+               <div className="grid grid-cols-2 gap-4">
+                 <div><label className="text-sm font-bold">Title (AR)</label><input required name="title_ar" defaultValue={editingItem?.title_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+                 <div><label className="text-sm font-bold">Title (EN)</label><input required name="title_en" defaultValue={editingItem?.title_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               </div>
+               <div><label className="text-sm font-bold">Date</label><input type="date" required name="date" defaultValue={editingItem?.date} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               <div><label className="text-sm font-bold">Image URL</label><input required name="imageUrl" defaultValue={editingItem?.imageUrl} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               <div><label className="text-sm font-bold">Summary (AR)</label><textarea name="summary_ar" defaultValue={editingItem?.summary_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               <div><label className="text-sm font-bold">Summary (EN)</label><textarea name="summary_en" defaultValue={editingItem?.summary_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+             </>
+          )}
+
+          {/* EVENT FORM */}
+          {tab === 'events' && (
+             <>
+               <div className="grid grid-cols-2 gap-4">
+                 <div><label className="text-sm font-bold">Title (AR)</label><input required name="title_ar" defaultValue={editingItem?.title_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+                 <div><label className="text-sm font-bold">Title (EN)</label><input required name="title_en" defaultValue={editingItem?.title_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <div><label className="text-sm font-bold">Location (AR)</label><input required name="location_ar" defaultValue={editingItem?.location_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+                 <div><label className="text-sm font-bold">Location (EN)</label><input required name="location_en" defaultValue={editingItem?.location_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               </div>
+               <div><label className="text-sm font-bold">Date</label><input type="date" required name="date" defaultValue={editingItem?.date} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               <div><label className="text-sm font-bold">Image URL</label><input required name="imageUrl" defaultValue={editingItem?.imageUrl} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               <div><label className="text-sm font-bold">Desc (AR)</label><textarea name="description_ar" defaultValue={editingItem?.description_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               <div><label className="text-sm font-bold">Desc (EN)</label><textarea name="description_en" defaultValue={editingItem?.description_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+             </>
+          )}
+
+          {/* JOB FORM */}
+          {tab === 'jobs' && (
+             <>
+               <div className="grid grid-cols-2 gap-4">
+                 <div><label className="text-sm font-bold">Title (AR)</label><input required name="title_ar" defaultValue={editingItem?.title_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+                 <div><label className="text-sm font-bold">Title (EN)</label><input required name="title_en" defaultValue={editingItem?.title_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <div><label className="text-sm font-bold">Department (AR)</label><input required name="department_ar" defaultValue={editingItem?.department_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+                 <div><label className="text-sm font-bold">Department (EN)</label><input required name="department_en" defaultValue={editingItem?.department_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <div><label className="text-sm font-bold">Location (AR)</label><input required name="location_ar" defaultValue={editingItem?.location_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+                 <div><label className="text-sm font-bold">Location (EN)</label><input required name="location_en" defaultValue={editingItem?.location_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <div><label className="text-sm font-bold">Type (AR)</label><input required name="type_ar" defaultValue={editingItem?.type_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+                 <div><label className="text-sm font-bold">Type (EN)</label><input required name="type_en" defaultValue={editingItem?.type_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               </div>
+               <div><label className="text-sm font-bold">Desc (AR)</label><textarea name="description_ar" defaultValue={editingItem?.description_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+               <div><label className="text-sm font-bold">Desc (EN)</label><textarea name="description_en" defaultValue={editingItem?.description_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
+             </>
+          )}
+
+          <div className="flex gap-4 pt-4 border-t">
+            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 text-stone-600 font-bold hover:bg-stone-100 rounded-lg">{t.cancel}</button>
+            <button type="submit" className="flex-1 py-3 bg-brand-600 text-white font-bold rounded-lg hover:bg-brand-700 flex justify-center items-center gap-2"><Save size={18}/> {t.save}</button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
