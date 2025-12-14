@@ -2,9 +2,11 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 import { createRoot } from 'react-dom/client';
 import { 
   Menu, X, Globe, ShoppingCart, User, Wheat, MapPin, Phone, Mail, 
-  ChevronRight, ChevronLeft, Plus, Trash2, Edit, CheckCircle, Search,
+  ChevronRight, ChevronLeft, Plus, Minus, Trash2, Edit, CheckCircle, Search,
   Facebook, Twitter, Instagram, Linkedin, Factory, Truck, Award,
-  Calendar, Briefcase, FileText, Upload, Clock, ArrowRight, Save, Image as ImageIcon
+  Calendar, Briefcase, FileText, Upload, Clock, ArrowRight, Save, Image as ImageIcon,
+  LayoutDashboard, LogOut, Bell, Lock, ShieldCheck, Package, Star, Info, Leaf, DollarSign,
+  Zap, ThumbsUp
 } from 'lucide-react';
 
 // --- TYPES & INTERFACES ---
@@ -18,7 +20,7 @@ interface Product {
   name_en: string;
   weight: string;
   category: string;
-  price?: number; 
+  price: number; // Changed to required for this update
   imageUrl: string;
   description_ar: string;
   description_en: string;
@@ -74,9 +76,10 @@ const INITIAL_PRODUCTS: Product[] = [
     name_en: 'Al-Shifa Flour - Premium',
     weight: '25kg',
     category: 'flour',
+    price: 45.00,
     imageUrl: 'https://placehold.co/400x600/eab308/ffffff?text=Al-Shifa+25kg',
-    description_ar: 'دقيق فاخر متعدد الاستخدامات، مثالي للمخبوزات والمعجنات.',
-    description_en: 'Premium all-purpose flour, perfect for baking and pastries.',
+    description_ar: 'دقيق فاخر متعدد الاستخدامات، مثالي للمخبوزات والمعجنات. يتميز بنقاء عالي ونسبة بروتين متوازنة تضمن أفضل النتائج في الخبز المنزلي والتجاري.',
+    description_en: 'Premium all-purpose flour, perfect for baking and pastries. Characterized by high purity and balanced protein ratio ensuring best results for home and commercial baking.',
     active: true
   },
   {
@@ -85,9 +88,10 @@ const INITIAL_PRODUCTS: Product[] = [
     name_en: 'Al-Sadd Flour',
     weight: '25kg',
     category: 'flour',
+    price: 42.50,
     imageUrl: 'https://placehold.co/400x600/d97706/ffffff?text=Al-Sadd+25kg',
-    description_ar: 'دقيق عالي الجودة للمخابز الآلية.',
-    description_en: 'High quality flour for automated bakeries.',
+    description_ar: 'دقيق عالي الجودة مصمم خصيصاً للمخابز الآلية والإنتاج الكثيف. يتحمل عمليات العجن القوية ويعطي قواماً متماسكاً للخبز.',
+    description_en: 'High quality flour designed specifically for automated bakeries and mass production. Withstands strong kneading processes and gives consistent texture to bread.',
     active: true
   },
   {
@@ -96,9 +100,10 @@ const INITIAL_PRODUCTS: Product[] = [
     name_en: 'Ras Al-Thawr Flour',
     weight: '25kg',
     category: 'flour',
+    price: 44.00,
     imageUrl: 'https://placehold.co/400x600/b45309/ffffff?text=Ras+Al-Thawr',
-    description_ar: 'دقيق قوي يتميز بمرونة عالية للعجين.',
-    description_en: 'Strong flour characterized by high dough elasticity.',
+    description_ar: 'دقيق قوي يتميز بمرونة عالية للعجين (Elasticity). الخيار الأمثل للخبز الشعبي والمنتجات التي تتطلب تمدداً عالياً.',
+    description_en: 'Strong flour characterized by high dough elasticity. The optimal choice for traditional bread and products requiring high extensibility.',
     active: true
   },
   {
@@ -107,9 +112,10 @@ const INITIAL_PRODUCTS: Product[] = [
     name_en: 'Al-Rayyan Flour',
     weight: '25kg',
     category: 'flour',
+    price: 48.00,
     imageUrl: 'https://placehold.co/400x600/92400e/ffffff?text=Al-Rayyan',
-    description_ar: 'دقيق استخراج 72%، بياض ناصع.',
-    description_en: '72% extraction flour, pure white.',
+    description_ar: 'دقيق استخراج 72%، بياض ناصع ونعومة فائقة. مثالي للحلويات الشرقية والكعك.',
+    description_en: '72% extraction flour, pure white and ultra-fine. Perfect for oriental sweets and cakes.',
     active: true
   },
   {
@@ -118,9 +124,10 @@ const INITIAL_PRODUCTS: Product[] = [
     name_en: 'Al-Jawhara Flour',
     weight: '25kg',
     category: 'flour',
+    price: 50.00,
     imageUrl: 'https://placehold.co/400x600/78350f/ffffff?text=Al-Jawhara',
-    description_ar: 'الخيار الأول لصناعة البسكويت والكيك.',
-    description_en: 'The first choice for biscuits and cake manufacturing.',
+    description_ar: 'الخيار الأول لصناعة البسكويت والكيك. نسبة جلوتين منخفضة تضمن هشاشة المنتج النهائي.',
+    description_en: 'The first choice for biscuits and cake manufacturing. Low gluten content ensures the crispiness/softness of the final product.',
     active: true
   },
   {
@@ -129,9 +136,10 @@ const INITIAL_PRODUCTS: Product[] = [
     name_en: 'Wheat Bran (Radda)',
     weight: '40kg',
     category: 'bran',
+    price: 30.00,
     imageUrl: 'https://placehold.co/400x600/A0522D/ffffff?text=Bran+40kg',
-    description_ar: 'نخالة قمح صافية للأعلاف والاستخدامات الأخرى.',
-    description_en: 'Pure wheat bran for feed and other uses.',
+    description_ar: 'نخالة قمح صافية غنية بالألياف. تستخدم للأعلاف الحيوانية ولبعض المخبوزات الصحية.',
+    description_en: 'Pure wheat bran rich in fiber. Used for animal feed and some healthy baked goods.',
     active: true
   },
   {
@@ -140,9 +148,10 @@ const INITIAL_PRODUCTS: Product[] = [
     name_en: 'Household Flour',
     weight: '1kg',
     category: 'flour',
+    price: 5.50,
     imageUrl: 'https://placehold.co/400x600/fbbf24/000000?text=1kg+Pack',
-    description_ar: 'عبوة منزلية اقتصادية.',
-    description_en: 'Economical household pack.',
+    description_ar: 'عبوة منزلية اقتصادية سهلة التخزين. نفس جودة دقيق الشفاء الفاخر في عبوة مناسبة للاستخدام اليومي.',
+    description_en: 'Economical household pack, easy to store. Same quality as Al-Shifa Premium flour in a package suitable for daily use.',
     active: true
   }
 ];
@@ -244,9 +253,14 @@ const TRANSLATIONS = {
     prod_title: 'منتجاتنا المميزة',
     add_to_cart: 'أضف للسلة',
     request_order: 'طلب عرض سعر',
-    cart_title: 'سلة الطلبات',
+    cart_title: 'سلة المشتريات',
     cart_empty: 'السلة فارغة حالياً',
-    checkout: 'إرسال طلب الشراء',
+    cart_continue: 'تابع التسوق',
+    checkout: 'إتمام الطلب',
+    order_summary: 'ملخص الطلب',
+    items_count: 'عنصر',
+    confirm_request: 'تأكيد طلب عرض السعر',
+    secure_request: 'طلب آمن ومشفّر',
     footer_desc: 'مطاحن الشفاء للغلال، شركة رائدة في مجال الأمن الغذائي وصناعة الدقيق. نلتزم بأعلى معايير الجودة والسلامة الغذائية.',
     admin_login: 'دخول المسؤولين',
     admin_dash: 'لوحة التحكم',
@@ -257,7 +271,8 @@ const TRANSLATIONS = {
     products_manage: 'إدارة المنتجات',
     order_success: 'تم إرسال طلبك بنجاح! سيتواصل معك فريق المبيعات قريباً.',
     contact_us_title: 'تواصل معنا',
-    name: 'الاسم',
+    name: 'الاسم الكامل',
+    phone: 'رقم الهاتف',
     message: 'الرسالة',
     send: 'إرسال',
     subscribe: 'اشترك في النشرة البريدية',
@@ -285,7 +300,18 @@ const TRANSLATIONS = {
     delete: 'حذف',
     add_new: 'إضافة جديد',
     cancel: 'إلغاء',
-    save: 'حفظ'
+    save: 'حفظ',
+    dashboard_overview: 'نظرة عامة',
+    total_products: 'إجمالي المنتجات',
+    total_news: 'الأخبار والمقالات',
+    total_events: 'الفعاليات',
+    total_jobs: 'الوظائف المتاحة',
+    image_preview: 'معاينة الصورة',
+    saved_success: 'تم الحفظ بنجاح',
+    deleted_success: 'تم الحذف بنجاح',
+    login_error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+    upload_image: 'رفع صورة',
+    currency: 'ر.س'
   },
   en: {
     brand: 'Al-Shifa Mills',
@@ -304,9 +330,14 @@ const TRANSLATIONS = {
     prod_title: 'Our Featured Products',
     add_to_cart: 'Add to Cart',
     request_order: 'Request Quote',
-    cart_title: 'Order Cart',
-    cart_empty: 'Cart is currently empty',
-    checkout: 'Submit Order Request',
+    cart_title: 'Shopping Cart',
+    cart_empty: 'Your cart is currently empty',
+    cart_continue: 'Continue Shopping',
+    checkout: 'Checkout',
+    order_summary: 'Order Summary',
+    items_count: 'Items',
+    confirm_request: 'Confirm Quote Request',
+    secure_request: 'Secure & Encrypted Request',
     footer_desc: 'Al-Shifa Flour Mills, a leader in food security and flour manufacturing. Committed to the highest standards of quality and food safety.',
     admin_login: 'Admin Login',
     admin_dash: 'Dashboard',
@@ -317,7 +348,8 @@ const TRANSLATIONS = {
     products_manage: 'Manage Products',
     order_success: 'Order submitted successfully! Sales team will contact you soon.',
     contact_us_title: 'Contact Us',
-    name: 'Name',
+    name: 'Full Name',
+    phone: 'Phone Number',
     message: 'Message',
     send: 'Send',
     subscribe: 'Subscribe to Newsletter',
@@ -345,7 +377,18 @@ const TRANSLATIONS = {
     delete: 'Delete',
     add_new: 'Add New',
     cancel: 'Cancel',
-    save: 'Save'
+    save: 'Save',
+    dashboard_overview: 'Overview',
+    total_products: 'Total Products',
+    total_news: 'News & Articles',
+    total_events: 'Events',
+    total_jobs: 'Open Positions',
+    image_preview: 'Image Preview',
+    saved_success: 'Saved Successfully',
+    deleted_success: 'Deleted Successfully',
+    login_error: 'Invalid Email or Password',
+    upload_image: 'Upload Image',
+    currency: 'SAR'
   }
 };
 
@@ -357,7 +400,8 @@ const AppContext = createContext<{
   view: View;
   setView: (v: View) => void;
   cart: CartItem[];
-  addToCart: (p: Product) => void;
+  addToCart: (p: Product, quantity?: number) => void;
+  updateQuantity: (id: string, delta: number) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
   user: any; 
@@ -406,7 +450,7 @@ const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative z-10 animate-in fade-in zoom-in-95 duration-200">
-        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-20">
           <h3 className="text-xl font-bold">{title}</h3>
           <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full"><X size={20}/></button>
         </div>
@@ -422,6 +466,8 @@ const Header = () => {
   const { lang, setLang, view, setView, cart, user, logout } = useContext(AppContext);
   const t = TRANSLATIONS[lang];
   const [mobileMenu, setMobileMenu] = useState(false);
+
+  const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -460,9 +506,9 @@ const Header = () => {
 
           <button onClick={() => setView('cart')} className="relative p-2 text-stone-600 hover:text-brand-600">
             <ShoppingCart size={24} />
-            {cart.length > 0 && (
+            {totalItems > 0 && (
               <span className="absolute top-0 right-0 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                {cart.length}
+                {totalItems}
               </span>
             )}
           </button>
@@ -732,694 +778,96 @@ const StatsSection = () => {
     );
 };
 
+// Internal component for handling individual card state (quantity)
+const ProductCard = ({ product, onClick, onAddToCart, lang, t }: any) => {
+  const [qty, setQty] = useState(1);
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAddToCart(product, qty);
+    setQty(1); // Reset after adding
+  };
+
+  const increment = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setQty(q => q + 1);
+  };
+
+  const decrement = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setQty(q => Math.max(1, q - 1));
+  };
+
+  return (
+    <div 
+      onClick={() => onClick(product)}
+      className="group relative bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-full"
+    >
+      {/* Image Area with Studio Background */}
+      <div className="h-72 bg-gradient-to-br from-stone-50 to-stone-100 p-8 flex items-center justify-center relative overflow-hidden">
+        {/* Subtle decorative circle */}
+        <div className="absolute w-48 h-48 bg-white/50 rounded-full blur-3xl -top-10 -right-10 pointer-events-none"></div>
+        
+        <img 
+            src={product.imageUrl} 
+            alt={lang === 'ar' ? product.name_ar : product.name_en} 
+            className="w-full h-full object-contain drop-shadow-xl group-hover:scale-110 transition-transform duration-500 z-10" 
+        />
+        
+        {/* Category Badge */}
+        <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-stone-500 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm border border-white">
+            {product.category}
+        </span>
+      </div>
+
+      {/* Content Area */}
+      <div className="p-6 flex flex-col flex-1 relative">
+        <div className="flex justify-between items-start mb-2">
+           <h3 className="text-lg font-bold text-stone-900 leading-tight line-clamp-1 group-hover:text-brand-600 transition-colors">
+             {lang === 'ar' ? product.name_ar : product.name_en}
+           </h3>
+        </div>
+        
+        <div className="flex items-center gap-2 mb-6">
+            <span className="text-sm font-medium text-stone-400 bg-stone-50 px-2 py-0.5 rounded text-xs">{product.weight}</span>
+            <div className="flex gap-0.5 text-brand-400">
+                {[1,2,3,4,5].map(i => <Star key={i} size={10} fill="currentColor"/>)}
+            </div>
+        </div>
+
+        <div className="mt-auto flex items-end justify-between gap-3">
+             <div className="flex flex-col">
+                <span className="text-xs text-stone-400 font-medium">Price</span>
+                <span className="text-2xl font-black text-brand-600 tracking-tight">{product.price}<span className="text-sm font-bold text-stone-400 ml-0.5">{t.currency}</span></span>
+             </div>
+
+             {/* Action Button - Expands on Hover (Desktop) or stays accessible */}
+             <div className="flex items-center gap-2 bg-stone-900 p-1 rounded-xl shadow-lg group-hover:bg-brand-600 transition-colors duration-300" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center bg-stone-800 rounded-lg group-hover:bg-brand-700 transition-colors">
+                    <button onClick={decrement} disabled={qty <= 1} className="w-8 h-8 flex items-center justify-center text-white/70 hover:text-white transition disabled:opacity-30"><Minus size={14}/></button>
+                    <span className="w-4 text-center text-sm font-bold text-white tabular-nums">{qty}</span>
+                    <button onClick={increment} className="w-8 h-8 flex items-center justify-center text-white/70 hover:text-white transition"><Plus size={14}/></button>
+                </div>
+                <button onClick={handleAddToCart} className="w-8 h-8 flex items-center justify-center text-white hover:scale-110 transition active:scale-95" title={t.add_to_cart}>
+                    <ShoppingCart size={18} />
+                </button>
+             </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ProductList = () => {
   const { lang, products, addToCart } = useContext(AppContext);
   const t = TRANSLATIONS[lang];
-
-  return (
-    <div className="container mx-auto px-4 py-20">
-      <div className="text-center mb-16">
-          <span className="text-brand-600 font-bold uppercase tracking-wider text-sm">{t.brand}</span>
-          <h3 className="text-4xl font-bold text-stone-900 mt-2">{t.prod_title}</h3>
-          <div className="w-24 h-1 bg-brand-500 mx-auto mt-4 rounded-full"></div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
-        {products.map(p => (
-          <div key={p.id} className="bg-white rounded-2xl shadow-sm hover:shadow-2xl transition duration-300 border border-stone-100 overflow-hidden group flex flex-col">
-            <div className="h-64 bg-stone-50 p-8 flex items-center justify-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-brand-900/5 opacity-0 group-hover:opacity-100 transition duration-300"></div>
-              <img src={p.imageUrl} alt={lang === 'ar' ? p.name_ar : p.name_en} className="max-h-full object-contain group-hover:scale-110 transition duration-500 z-10" />
-              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-brand-800 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm z-20">
-                {p.weight}
-              </div>
-            </div>
-            <div className="p-6 flex-1 flex flex-col">
-              <div className="mb-2">
-                 <span className="text-xs text-stone-400 uppercase font-semibold">{p.category}</span>
-              </div>
-              <h4 className="text-xl font-bold text-stone-800 mb-3 leading-tight">{lang === 'ar' ? p.name_ar : p.name_en}</h4>
-              <p className="text-stone-500 text-sm mb-6 line-clamp-2 flex-1">{lang === 'ar' ? p.description_ar : p.description_en}</p>
-              <button 
-                onClick={() => addToCart(p)}
-                className="w-full bg-stone-900 text-white py-3 rounded-xl hover:bg-brand-600 transition flex items-center justify-center gap-2 font-semibold shadow-lg shadow-stone-900/10 group-hover:shadow-brand-600/20"
-              >
-                <Plus size={18} /> {t.add_to_cart}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const CartView = () => {
-  const { lang, cart, removeFromCart, clearCart } = useContext(AppContext);
-  const t = TRANSLATIONS[lang];
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    FirebaseService.submitOrder({ cart, date: new Date() });
-    setSubmitted(true);
-    setTimeout(() => {
-      clearCart();
-      setSubmitted(false);
-    }, 3000);
-  };
-
-  if (submitted) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-4">
-        <div className="bg-green-100 text-green-600 p-6 rounded-full mb-6"><CheckCircle size={64} /></div>
-        <h3 className="text-3xl font-bold text-green-800 mb-2">{t.order_success}</h3>
-        <p className="text-stone-500">REF: #{Math.floor(Math.random() * 10000)}</p>
-      </div>
-    );
-  }
-
-  if (cart.length === 0) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-stone-400">
-        <ShoppingCart size={80} className="mb-6 opacity-20" />
-        <p className="text-2xl font-bold text-stone-300">{t.cart_empty}</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto px-4 py-12 max-w-4xl">
-      <h2 className="text-3xl font-bold mb-8">{t.cart_title}</h2>
-      <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-6 mb-8">
-        {cart.map((item, idx) => (
-          <div key={idx} className="flex items-center justify-between border-b last:border-0 border-stone-100 py-6">
-            <div className="flex items-center gap-6">
-              <div className="w-20 h-20 bg-stone-50 rounded-lg p-2 flex items-center justify-center">
-                 <img src={item.imageUrl} className="max-w-full max-h-full object-contain" />
-              </div>
-              <div>
-                <h4 className="font-bold text-lg text-stone-800">{lang === 'ar' ? item.name_ar : item.name_en}</h4>
-                <p className="text-sm text-stone-500">{item.weight}</p>
-              </div>
-            </div>
-            <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition">
-              <Trash2 size={20} />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-8 border border-stone-100">
-        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <User className="text-brand-600" /> {t.checkout}
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-              <label className="block text-sm font-bold text-stone-600 mb-2">{t.name} *</label>
-              <input required type="text" className="border border-stone-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition" />
-          </div>
-          <div>
-              <label className="block text-sm font-bold text-stone-600 mb-2">{t.email} *</label>
-              <input required type="email" className="border border-stone-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition" />
-          </div>
-          <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-stone-600 mb-2">Phone *</label>
-              <input required type="tel" className="border border-stone-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition" />
-          </div>
-        </div>
-        <button type="submit" className="bg-brand-600 text-white w-full py-4 rounded-xl font-bold hover:bg-brand-700 transition shadow-lg shadow-brand-600/20 text-lg">
-          {t.checkout}
-        </button>
-      </form>
-    </div>
-  );
-};
-
-const AdminPanel = () => {
-  const { lang, products, setProducts, news, setNews, events, setEvents, jobs, setJobs } = useContext(AppContext);
-  const t = TRANSLATIONS[lang];
-  const [tab, setTab] = useState('products');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-
-  // Form State
-  const [formData, setFormData] = useState<any>({});
-
-  const handleEdit = (item: any) => {
-    setEditingItem(item);
-    setFormData({...item});
-    setIsModalOpen(true);
-  };
-
-  const handleAdd = () => {
-    setEditingItem(null);
-    setFormData({});
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = (id: string, list: any[], setter: any) => {
-    if(confirm(t.delete + '?')) {
-      setter(list.filter((i: any) => i.id !== id));
-    }
-  };
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newItem = {
-      ...formData,
-      id: editingItem ? editingItem.id : Math.random().toString(36).substr(2, 9),
-      // Set defaults for specific types if new
-      ...(tab === 'jobs' && !editingItem ? { postedDate: new Date().toISOString().split('T')[0] } : {})
-    };
-
-    if (tab === 'products') {
-      if (editingItem) setProducts(products.map(p => p.id === newItem.id ? newItem : p));
-      else setProducts([...products, newItem]);
-    } else if (tab === 'news') {
-      if (editingItem) setNews(news.map(n => n.id === newItem.id ? newItem : n));
-      else setNews([...news, newItem]);
-    } else if (tab === 'events') {
-      if (editingItem) setEvents(events.map(ev => ev.id === newItem.id ? newItem : ev));
-      else setEvents([...events, newItem]);
-    } else if (tab === 'jobs') {
-      if (editingItem) setJobs(jobs.map(j => j.id === newItem.id ? newItem : j));
-      else setJobs([...jobs, newItem]);
-    }
-
-    setIsModalOpen(false);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-64 bg-stone-900 text-white rounded-xl p-6 h-fit sticky top-24">
-          <h3 className="text-xl font-bold mb-8 px-2 flex items-center gap-2"><Wheat size={20} className="text-brand-500"/> Al-Shifa Admin</h3>
-          <nav className="flex flex-col gap-2">
-            {['products', 'news', 'events', 'jobs', 'orders', 'users'].map((t) => (
-              <button 
-                key={t}
-                onClick={() => setTab(t)} 
-                className={`px-4 py-3 rounded-lg text-start font-medium transition capitalize ${tab === t ? 'bg-brand-600 text-white' : 'hover:bg-stone-800 text-stone-400'}`}
-              >
-                {t}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="flex-1 bg-white rounded-xl shadow-sm border border-stone-200 p-8 min-h-[500px]">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold capitalize text-stone-800">{tab} Management</h2>
-            {['products', 'news', 'events', 'jobs'].includes(tab) && (
-              <button onClick={handleAdd} className="bg-brand-600 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 hover:bg-brand-700 font-bold shadow-md transition">
-                <Plus size={18} /> {t.add_new}
-              </button>
-            )}
-          </div>
-
-          {/* LISTS */}
-          {tab === 'products' && (
-            <div className="overflow-x-auto rounded-lg border border-stone-200">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-stone-50">
-                  <tr className="border-b border-stone-200 text-stone-500 text-sm uppercase">
-                    <th className="p-4 font-semibold">Name</th>
-                    <th className="p-4 font-semibold">Category</th>
-                    <th className="p-4 font-semibold">Weight</th>
-                    <th className="p-4 font-semibold">Status</th>
-                    <th className="p-4 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
-                  {products.map(p => (
-                    <tr key={p.id} className="hover:bg-stone-50/50 transition">
-                      <td className="p-4 font-bold text-stone-700">{p.name_en}</td>
-                      <td className="p-4"><span className="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full font-bold">{p.category}</span></td>
-                      <td className="p-4 text-stone-600">{p.weight}</td>
-                      <td className="p-4 text-green-600"><CheckCircle size={18} /></td>
-                      <td className="p-4 flex gap-2">
-                        <button onClick={() => handleEdit(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={18}/></button>
-                        <button onClick={() => handleDelete(p.id, products, setProducts)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18}/></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {tab === 'news' && (
-             <div className="space-y-4">
-               {news.map(item => (
-                 <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-stone-50">
-                   <div className="flex gap-4 items-center">
-                     <img src={item.imageUrl} className="w-16 h-16 rounded object-cover" />
-                     <div>
-                       <h4 className="font-bold">{item.title_en}</h4>
-                       <span className="text-xs text-stone-500">{item.date}</span>
-                     </div>
-                   </div>
-                   <div className="flex gap-2">
-                     <button onClick={() => handleEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={18}/></button>
-                     <button onClick={() => handleDelete(item.id, news, setNews)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18}/></button>
-                   </div>
-                 </div>
-               ))}
-             </div>
-          )}
-
-          {tab === 'events' && (
-             <div className="space-y-4">
-               {events.map(item => (
-                 <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-stone-50">
-                   <div>
-                     <h4 className="font-bold">{item.title_en}</h4>
-                     <div className="flex gap-4 text-xs text-stone-500 mt-1">
-                        <span className="flex items-center gap-1"><Calendar size={12}/> {item.date}</span>
-                        <span className="flex items-center gap-1"><MapPin size={12}/> {item.location_en}</span>
-                     </div>
-                   </div>
-                   <div className="flex gap-2">
-                     <button onClick={() => handleEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={18}/></button>
-                     <button onClick={() => handleDelete(item.id, events, setEvents)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18}/></button>
-                   </div>
-                 </div>
-               ))}
-             </div>
-          )}
-          
-          {tab === 'jobs' && (
-             <div className="space-y-4">
-               {jobs.map(item => (
-                 <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-stone-50">
-                   <div>
-                     <h4 className="font-bold">{item.title_en}</h4>
-                     <div className="flex gap-2 text-xs text-stone-500 mt-1">
-                        <span className="bg-stone-100 px-2 py-0.5 rounded">{item.department_en}</span>
-                        <span className="bg-stone-100 px-2 py-0.5 rounded">{item.type_en}</span>
-                     </div>
-                   </div>
-                   <div className="flex gap-2">
-                     <button onClick={() => handleEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={18}/></button>
-                     <button onClick={() => handleDelete(item.id, jobs, setJobs)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18}/></button>
-                   </div>
-                 </div>
-               ))}
-             </div>
-          )}
-
-          {tab === 'orders' && <div className="text-center py-20 text-stone-400">No new orders received today.</div>}
-        </div>
-      </div>
-
-      {/* Dynamic Modal Form */}
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title={editingItem ? `${t.edit} ${tab}` : `${t.add_new} ${tab}`}
-      >
-        <form onSubmit={handleSave} className="space-y-4">
-          
-          {/* PRODUCT FORM */}
-          {tab === 'products' && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-sm font-bold">Name (AR)</label><input required name="name_ar" defaultValue={editingItem?.name_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-                <div><label className="text-sm font-bold">Name (EN)</label><input required name="name_en" defaultValue={editingItem?.name_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-sm font-bold">Category</label><input required name="category" defaultValue={editingItem?.category} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-                <div><label className="text-sm font-bold">Weight</label><input required name="weight" defaultValue={editingItem?.weight} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-              </div>
-               <div><label className="text-sm font-bold">Image URL</label><input required name="imageUrl" defaultValue={editingItem?.imageUrl} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               <div><label className="text-sm font-bold">Desc (AR)</label><textarea name="description_ar" defaultValue={editingItem?.description_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               <div><label className="text-sm font-bold">Desc (EN)</label><textarea name="description_en" defaultValue={editingItem?.description_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-            </>
-          )}
-
-          {/* NEWS FORM */}
-          {tab === 'news' && (
-             <>
-               <div className="grid grid-cols-2 gap-4">
-                 <div><label className="text-sm font-bold">Title (AR)</label><input required name="title_ar" defaultValue={editingItem?.title_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-                 <div><label className="text-sm font-bold">Title (EN)</label><input required name="title_en" defaultValue={editingItem?.title_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               </div>
-               <div><label className="text-sm font-bold">Date</label><input type="date" required name="date" defaultValue={editingItem?.date} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               <div><label className="text-sm font-bold">Image URL</label><input required name="imageUrl" defaultValue={editingItem?.imageUrl} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               <div><label className="text-sm font-bold">Summary (AR)</label><textarea name="summary_ar" defaultValue={editingItem?.summary_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               <div><label className="text-sm font-bold">Summary (EN)</label><textarea name="summary_en" defaultValue={editingItem?.summary_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-             </>
-          )}
-
-          {/* EVENT FORM */}
-          {tab === 'events' && (
-             <>
-               <div className="grid grid-cols-2 gap-4">
-                 <div><label className="text-sm font-bold">Title (AR)</label><input required name="title_ar" defaultValue={editingItem?.title_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-                 <div><label className="text-sm font-bold">Title (EN)</label><input required name="title_en" defaultValue={editingItem?.title_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                 <div><label className="text-sm font-bold">Location (AR)</label><input required name="location_ar" defaultValue={editingItem?.location_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-                 <div><label className="text-sm font-bold">Location (EN)</label><input required name="location_en" defaultValue={editingItem?.location_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               </div>
-               <div><label className="text-sm font-bold">Date</label><input type="date" required name="date" defaultValue={editingItem?.date} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               <div><label className="text-sm font-bold">Image URL</label><input required name="imageUrl" defaultValue={editingItem?.imageUrl} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               <div><label className="text-sm font-bold">Desc (AR)</label><textarea name="description_ar" defaultValue={editingItem?.description_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               <div><label className="text-sm font-bold">Desc (EN)</label><textarea name="description_en" defaultValue={editingItem?.description_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-             </>
-          )}
-
-          {/* JOB FORM */}
-          {tab === 'jobs' && (
-             <>
-               <div className="grid grid-cols-2 gap-4">
-                 <div><label className="text-sm font-bold">Title (AR)</label><input required name="title_ar" defaultValue={editingItem?.title_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-                 <div><label className="text-sm font-bold">Title (EN)</label><input required name="title_en" defaultValue={editingItem?.title_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                 <div><label className="text-sm font-bold">Department (AR)</label><input required name="department_ar" defaultValue={editingItem?.department_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-                 <div><label className="text-sm font-bold">Department (EN)</label><input required name="department_en" defaultValue={editingItem?.department_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                 <div><label className="text-sm font-bold">Location (AR)</label><input required name="location_ar" defaultValue={editingItem?.location_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-                 <div><label className="text-sm font-bold">Location (EN)</label><input required name="location_en" defaultValue={editingItem?.location_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                 <div><label className="text-sm font-bold">Type (AR)</label><input required name="type_ar" defaultValue={editingItem?.type_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-                 <div><label className="text-sm font-bold">Type (EN)</label><input required name="type_en" defaultValue={editingItem?.type_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               </div>
-               <div><label className="text-sm font-bold">Desc (AR)</label><textarea name="description_ar" defaultValue={editingItem?.description_ar} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-               <div><label className="text-sm font-bold">Desc (EN)</label><textarea name="description_en" defaultValue={editingItem?.description_en} onChange={handleChange} className="w-full border p-2 rounded"/></div>
-             </>
-          )}
-
-          <div className="flex gap-4 pt-4 border-t">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 text-stone-600 font-bold hover:bg-stone-100 rounded-lg">{t.cancel}</button>
-            <button type="submit" className="flex-1 py-3 bg-brand-600 text-white font-bold rounded-lg hover:bg-brand-700 flex justify-center items-center gap-2"><Save size={18}/> {t.save}</button>
-          </div>
-        </form>
-      </Modal>
-    </div>
-  );
-};
-
-const Login = () => {
-  const { login, lang } = useContext(AppContext);
-  const t = TRANSLATIONS[lang];
-  const [email, setEmail] = useState('');
-  const [pass, setPass] = useState('');
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email === 'admin@alshifa.com') login('admin');
-    else alert('Use admin@alshifa.com for demo');
-  };
-
-  return (
-    <div className="min-h-[70vh] flex items-center justify-center bg-stone-50 p-4">
-      <div className="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md border border-stone-100">
-        <div className="text-center mb-8">
-          <div className="bg-brand-50 text-brand-600 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
-            <User size={40} />
-          </div>
-          <h2 className="text-3xl font-bold text-stone-800">{t.admin_login}</h2>
-        </div>
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label className="block text-sm font-bold text-stone-600 mb-2">{t.email}</label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full border border-stone-300 p-3.5 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition" 
-              placeholder="admin@alshifa.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-stone-600 mb-2">{t.password}</label>
-            <input 
-              type="password" 
-              value={pass}
-              onChange={e => setPass(e.target.value)}
-              className="w-full border border-stone-300 p-3.5 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition" 
-              placeholder="********"
-            />
-          </div>
-          <button className="w-full bg-stone-900 text-white py-4 rounded-xl font-bold hover:bg-brand-600 transition shadow-lg">
-            {t.login}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-const Footer = () => {
-  const { lang, setView } = useContext(AppContext);
-  const t = TRANSLATIONS[lang];
-
-  return (
-    <footer className="bg-stone-950 text-stone-400 pt-20 pb-8 mt-12 border-t border-brand-900">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          {/* Brand Column */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 text-white">
-              <div className="bg-brand-600 p-2 rounded-lg">
-                <Wheat size={24} className="text-white"/>
-              </div>
-              <span className="text-2xl font-bold">{t.brand}</span>
-            </div>
-            <p className="text-stone-400 leading-relaxed text-sm">{t.footer_desc}</p>
-            <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center hover:bg-brand-600 hover:text-white transition duration-300"><Facebook size={18}/></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center hover:bg-brand-600 hover:text-white transition duration-300"><Twitter size={18}/></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center hover:bg-brand-600 hover:text-white transition duration-300"><Instagram size={18}/></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center hover:bg-brand-600 hover:text-white transition duration-300"><Linkedin size={18}/></a>
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-white font-bold text-lg mb-6 flex items-center gap-2 before:content-[''] before:w-2 before:h-2 before:bg-brand-500 before:rounded-full">{lang === 'ar' ? 'روابط سريعة' : 'Quick Links'}</h4>
-            <ul className="space-y-4">
-              <li><button onClick={() => setView('home')} className="hover:text-brand-500 transition flex items-center gap-2"><ChevronRight size={14}/> {t.nav_home}</button></li>
-              <li><button onClick={() => setView('products')} className="hover:text-brand-500 transition flex items-center gap-2"><ChevronRight size={14}/> {t.nav_products}</button></li>
-              <li><button onClick={() => setView('about')} className="hover:text-brand-500 transition flex items-center gap-2"><ChevronRight size={14}/> {t.nav_about}</button></li>
-              <li><button onClick={() => setView('careers')} className="hover:text-brand-500 transition flex items-center gap-2"><ChevronRight size={14}/> {t.nav_careers}</button></li>
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-              <h4 className="text-white font-bold text-lg mb-6 flex items-center gap-2 before:content-[''] before:w-2 before:h-2 before:bg-brand-500 before:rounded-full">{lang === 'ar' ? 'معلومات التواصل' : 'Contact Info'}</h4>
-              <ul className="space-y-4 text-sm">
-                <li className="flex items-start gap-3">
-                  <MapPin size={20} className="text-brand-600 mt-1 shrink-0"/> 
-                  <span>Industrial City, Phase 3,<br/>Riyadh, Saudi Arabia</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <Phone size={20} className="text-brand-600 shrink-0"/> 
-                  <span dir="ltr">+966 12 345 6789</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <Mail size={20} className="text-brand-600 shrink-0"/> 
-                  <span>info@alshifa.com</span>
-                </li>
-              </ul>
-          </div>
-
-          {/* Newsletter */}
-          <div>
-             <h4 className="text-white font-bold text-lg mb-6 flex items-center gap-2 before:content-[''] before:w-2 before:h-2 before:bg-brand-500 before:rounded-full">{t.subscribe}</h4>
-             <p className="text-xs mb-4">{lang === 'ar' ? 'اشترك في قائمتنا البريدية للحصول على آخر الأخبار والعروض.' : 'Subscribe to our newsletter for latest news and offers.'}</p>
-             <div className="flex flex-col gap-2">
-               <input type="email" placeholder={t.email} className="bg-stone-800 border-none text-white p-3 rounded-lg focus:ring-1 focus:ring-brand-500 outline-none text-sm" />
-               <button className="bg-brand-600 text-white py-3 rounded-lg font-bold text-sm hover:bg-brand-700 transition">{t.subscribe_btn}</button>
-             </div>
-          </div>
-        </div>
-
-        {/* Bottom Bar / Copyright */}
-        <div className="border-t border-stone-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-stone-500 gap-4">
-          <p>{t.copyright} &copy; {new Date().getFullYear()}</p>
-          <div className="flex items-center gap-1 bg-stone-900 px-4 py-2 rounded-full border border-stone-800">
-            <span>{t.designed_by}</span>
-            <a href="#" className="text-brand-500 font-bold hover:text-brand-400 transition ml-1">7Dvro</a>
-            <span className="text-stone-600">for IT Solutions</span>
-          </div>
-        </div>
-      </div>
-    </footer>
-  );
-};
-
-// --- APP ROOT ---
-
-const App = () => {
-  const [lang, setLang] = useState<Language>('ar');
-  const [view, setView] = useState<View>('home');
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [user, setUser] = useState<any>(null);
-  
-  // Data States
-  const [products, setProducts] = useState<Product[]>([]);
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [events, setEvents] = useState<EventItem[]>([]);
-  const [jobs, setJobs] = useState<JobItem[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [modalQty, setModalQty] = useState(1);
 
   useEffect(() => {
-    document.documentElement.lang = lang;
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    
-    // Load all initial data
-    FirebaseService.getProducts().then(setProducts);
-    FirebaseService.getNews().then(setNews);
-    FirebaseService.getEvents().then(setEvents);
-    FirebaseService.getJobs().then(setJobs);
-  }, [lang]);
-
-  const addToCart = (p: Product) => {
-    setCart([...cart, { ...p, quantity: 1 }]);
-    alert(lang === 'ar' ? 'تمت الإضافة للسلة' : 'Added to cart');
-  };
-
-  const removeFromCart = (id: string) => {
-    setCart(cart.filter(c => c.id !== id));
-  };
-
-  const clearCart = () => setCart([]);
-  const login = (role: string) => {
-    setUser({ name: 'Admin User', role, email: 'admin@alshifa.com' });
-    setView('admin');
-  };
-  const logout = () => {
-    setUser(null);
-    setView('home');
-  };
-
-  const contextValue = {
-    lang, setLang, view, setView, 
-    cart, addToCart, removeFromCart, clearCart, 
-    user, login, logout, 
-    products, setProducts,
-    news, setNews,
-    events, setEvents,
-    jobs, setJobs
-  };
-
-  return (
-    <AppContext.Provider value={contextValue}>
-      <div className="min-h-screen flex flex-col font-sans bg-white selection:bg-brand-500 selection:text-white">
-        <Header />
-        
-        <main className="flex-1">
-          {view === 'home' && (
-            <>
-              <Hero />
-              <StatsSection />
-              <ProductList />
-              
-              {/* Features/Impact Section */}
-              <div className="bg-stone-50 py-20 border-t border-stone-100">
-                <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-                  <div className="p-8 bg-white rounded-2xl shadow-sm border border-stone-100 hover:-translate-y-2 transition duration-300">
-                    <div className="bg-brand-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-brand-600 shadow-inner"><CheckCircle size={40}/></div>
-                    <h3 className="text-xl font-bold mb-3 text-stone-800">{lang === 'ar' ? 'جودة مضمونة' : 'Quality Guaranteed'}</h3>
-                    <p className="text-stone-500 leading-relaxed">{lang === 'ar' ? 'نستخدم أفضل أنواع القمح لضمان جودة منتجاتنا وفق أعلى المعايير.' : 'We use the best wheat types to ensure product quality per highest standards.'}</p>
-                  </div>
-                  <div className="p-8 bg-white rounded-2xl shadow-sm border border-stone-100 hover:-translate-y-2 transition duration-300">
-                    <div className="bg-brand-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-brand-600 shadow-inner"><MapPin size={40}/></div>
-                    <h3 className="text-xl font-bold mb-3 text-stone-800">{lang === 'ar' ? 'تغطية واسعة' : 'Wide Coverage'}</h3>
-                    <p className="text-stone-500 leading-relaxed">{lang === 'ar' ? 'أسطول توزيع متكامل يغطي جميع أنحاء المملكة لضمان الوصول السريع.' : 'Integrated distribution fleet covering the kingdom for fast delivery.'}</p>
-                  </div>
-                  <div className="p-8 bg-white rounded-2xl shadow-sm border border-stone-100 hover:-translate-y-2 transition duration-300">
-                    <div className="bg-brand-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-brand-600 shadow-inner"><Phone size={40}/></div>
-                    <h3 className="text-xl font-bold mb-3 text-stone-800">{lang === 'ar' ? 'دعم مستمر' : '24/7 Support'}</h3>
-                    <p className="text-stone-500 leading-relaxed">{lang === 'ar' ? 'فريق خدمة العملاء جاهز لخدمتكم والإجابة على استفساراتكم.' : 'Customer service team ready to serve you and answer your queries.'}</p>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {view === 'products' && <ProductList />}
-          {view === 'news' && <NewsView />}
-          {view === 'events' && <EventsView />}
-          {view === 'careers' && <CareersView />}
-          {view === 'cart' && <CartView />}
-          {view === 'login' && <Login />}
-          {view === 'admin' && (user ? <AdminPanel /> : <Login />)}
-          
-          {view === 'contact' && (
-            <div className="container mx-auto px-4 py-16">
-               <div className="max-w-3xl mx-auto bg-white p-10 rounded-2xl shadow-xl border border-stone-100">
-                 <div className="text-center mb-10">
-                    <div className="bg-brand-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-600"><Mail size={32}/></div>
-                    <h2 className="text-3xl font-bold text-stone-800">{TRANSLATIONS[lang].contact_us_title}</h2>
-                    <p className="text-stone-500 mt-2">We'd love to hear from you</p>
-                 </div>
-                 <form className="space-y-6">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-bold text-stone-600 mb-2">{TRANSLATIONS[lang].name}</label>
-                        <input type="text" className="w-full border border-stone-300 p-3.5 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-stone-600 mb-2">{TRANSLATIONS[lang].email}</label>
-                        <input type="email" className="w-full border border-stone-300 p-3.5 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition" />
-                      </div>
-                   </div>
-                   <div>
-                      <label className="block text-sm font-bold text-stone-600 mb-2">{TRANSLATIONS[lang].message}</label>
-                      <textarea rows={5} className="w-full border border-stone-300 p-3.5 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition"></textarea>
-                   </div>
-                   <button className="w-full bg-stone-900 text-white py-4 rounded-xl font-bold hover:bg-brand-600 transition shadow-lg">{TRANSLATIONS[lang].send}</button>
-                 </form>
-               </div>
-            </div>
-          )}
-
-          {view === 'about' && (
-             <div className="container mx-auto px-4 py-16 max-w-4xl">
-               <div className="bg-white p-10 rounded-2xl shadow-lg border border-stone-100">
-                  <div className="flex items-center gap-4 mb-8 pb-8 border-b border-stone-100">
-                     <div className="bg-brand-600 text-white p-4 rounded-2xl shadow-lg shadow-brand-600/30"><Wheat size={48}/></div>
-                     <div>
-                        <h2 className="text-4xl font-bold text-stone-900">{TRANSLATIONS[lang].nav_about}</h2>
-                        <span className="text-brand-600 font-bold tracking-widest uppercase text-sm">Since 1985</span>
-                     </div>
-                  </div>
-                  <div className="prose max-w-none text-stone-600 leading-loose text-lg">
-                    <p className="mb-6 font-medium text-stone-800">{TRANSLATIONS[lang].footer_desc}</p>
-                    <p>{lang === 'ar' ? 'تأسست مطاحن الشفاء برؤية تهدف إلى تعزيز الأمن الغذائي وتقديم منتجات عالية الجودة. نحن نستخدم أحدث التقنيات الألمانية في الطحن والغربلة لضمان استخراج أنقى أنواع الدقيق.' : 'Al-Shifa Mills was founded with a vision to enhance food security and provide high-quality products. We use the latest German technology in milling and sifting to ensure the extraction of the purest flour.'}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                       <div className="bg-stone-50 p-6 rounded-xl border border-stone-200">
-                          <h4 className="font-bold text-stone-900 mb-2">{lang === 'ar' ? 'رؤيتنا' : 'Our Vision'}</h4>
-                          <p className="text-sm">To be the leading provider of grain products in the Middle East.</p>
-                       </div>
-                       <div className="bg-stone-50 p-6 rounded-xl border border-stone-200">
-                          <h4 className="font-bold text-stone-900 mb-2">{lang === 'ar' ? 'رسالتنا' : 'Our Mission'}</h4>
-                          <p className="text-sm">Delivering healthy, high-quality nutrition to every home.</p>
-                       </div>
-                    </div>
-                  </div>
-               </div>
-             </div>
-          )}
-        </main>
-
-        <Footer />
-      </div>
-    </AppContext.Provider>
-  );
-};
-
-const root = createRoot(document.getElementById('root')!);
-root.render(<App />);
+    // 3D floating animation style
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes float3d {
+        0% { transform: translateY(0px) rotateY(-5deg); }
+        50% { transform: translateY(-1
