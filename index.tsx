@@ -6,7 +6,7 @@ import {
   Facebook, Twitter, Instagram, Linkedin, Factory, Truck, Award,
   Calendar, Briefcase, FileText, Upload, Clock, ArrowRight, Save, Image as ImageIcon,
   LayoutDashboard, LogOut, Bell, Lock, ShieldCheck, Package, Star, Info, Leaf, DollarSign,
-  Eye, EyeOff, LogIn
+  Eye, EyeOff, LogIn, MessageCircle, Send, Video
 } from 'lucide-react';
 
 // --- TYPES & INTERFACES ---
@@ -71,15 +71,15 @@ interface JobItem {
 // --- MOCK DATA ---
 const INITIAL_PRODUCTS: Product[] = [
   {
-    id: 'p1',
-    name_ar: 'دقيق الشفاء - فاخر',
-    name_en: 'Al-Shifa Flour - Premium',
+    id: 'p3',
+    name_ar: 'دقيق رأس الثور',
+    name_en: 'Ras Al-Thawr Flour',
     weight: '25kg',
     category: 'flour',
-    price: 45.00,
-    imageUrl: 'https://placehold.co/400x600/eab308/ffffff?text=Al-Shifa+25kg',
-    description_ar: 'دقيق فاخر متعدد الاستخدامات، مثالي للمخبوزات والمعجنات. يتميز بنقاء عالي ونسبة بروتين متوازنة تضمن أفضل النتائج في الخبز المنزلي والتجاري.',
-    description_en: 'Premium all-purpose flour, perfect for baking and pastries. Characterized by high purity and balanced protein ratio ensuring best results for home and commercial baking.',
+    price: 44.00,
+    imageUrl: '/assets/Ras Al Thawr Flour bag.png',
+    description_ar: 'دقيق رأس الثور الفاخر للمخابز الآلية والبلدية. يتميز بمرونة عالية وقوة عجين ممتازة.',
+    description_en: 'Ras Al-Thawr Premium Flour for automatic and municipal bakeries. Features high elasticity and excellent dough strength.',
     active: true
   },
   {
@@ -89,21 +89,9 @@ const INITIAL_PRODUCTS: Product[] = [
     weight: '25kg',
     category: 'flour',
     price: 42.50,
-    imageUrl: 'https://placehold.co/400x600/d97706/ffffff?text=Al-Sadd+25kg',
-    description_ar: 'دقيق عالي الجودة مصمم خصيصاً للمخابز الآلية والإنتاج الكثيف. يتحمل عمليات العجن القوية ويعطي قواماً متماسكاً للخبز.',
-    description_en: 'High quality flour designed specifically for automated bakeries and mass production. Withstands strong kneading processes and gives consistent texture to bread.',
-    active: true
-  },
-  {
-    id: 'p3',
-    name_ar: 'دقيق رأس الثور',
-    name_en: 'Ras Al-Thawr Flour',
-    weight: '25kg',
-    category: 'flour',
-    price: 44.00,
-    imageUrl: 'https://placehold.co/400x600/b45309/ffffff?text=Ras+Al-Thawr',
-    description_ar: 'دقيق قوي يتميز بمرونة عالية للعجين (Elasticity). الخيار الأمثل للخبز الشعبي والمنتجات التي تتطلب تمدداً عالياً.',
-    description_en: 'Strong flour characterized by high dough elasticity. The optimal choice for traditional bread and products requiring high extensibility.',
+    imageUrl: '/assets/Al Saad Flour bag.png',
+    description_ar: 'دقيق السد الفاخر، الخيار الأمثل للمخابز الآلية والإنتاج الكثيف. يعطي نتائج متناسقة.',
+    description_en: 'Al-Sadd Premium Flour, the optimal choice for automated bakeries and mass production. Delivers consistent results.',
     active: true
   },
   {
@@ -113,9 +101,9 @@ const INITIAL_PRODUCTS: Product[] = [
     weight: '25kg',
     category: 'flour',
     price: 48.00,
-    imageUrl: 'https://placehold.co/400x600/92400e/ffffff?text=Al-Rayyan',
-    description_ar: 'دقيق استخراج 72%، بياض ناصع ونعومة فائقة. مثالي للحلويات الشرقية والكعك.',
-    description_en: '72% extraction flour, pure white and ultra-fine. Perfect for oriental sweets and cakes.',
+    imageUrl: '/assets/Al Rayyan Flour bag.png',
+    description_ar: 'دقيق الريان الفاخر، يتميز بنقاء عالٍ ولون ناصع. مثالي للمعجنات الفاخرة والحلويات.',
+    description_en: 'Al-Rayyan Premium Flour, characterized by high purity and bright color. Perfect for premium pastries and sweets.',
     active: true
   },
   {
@@ -125,21 +113,33 @@ const INITIAL_PRODUCTS: Product[] = [
     weight: '25kg',
     category: 'flour',
     price: 50.00,
-    imageUrl: 'https://placehold.co/400x600/78350f/ffffff?text=Al-Jawhara',
-    description_ar: 'الخيار الأول لصناعة البسكويت والكيك. نسبة جلوتين منخفضة تضمن هشاشة المنتج النهائي.',
-    description_en: 'The first choice for biscuits and cake manufacturing. Low gluten content ensures the crispiness/softness of the final product.',
+    imageUrl: '/assets/Al Jawhara Flour bag.png',
+    description_ar: 'دقيق الجوهرة (رمز التميز). دقيق فاخر متعدد الاستخدامات يضمن هشاشة وطراوة.',
+    description_en: 'Al-Jawhara Flour (Symbol of Excellence). Premium all-purpose flour ensuring crispiness and softness.',
     active: true
   },
   {
     id: 'p6',
-    name_ar: 'ردة (نخالة)',
-    name_en: 'Wheat Bran (Radda)',
+    name_ar: 'ردة الجوهرة (نخالة)',
+    name_en: 'Al-Jawhara Bran',
     weight: '40kg',
     category: 'bran',
     price: 30.00,
-    imageUrl: 'https://placehold.co/400x600/A0522D/ffffff?text=Bran+40kg',
-    description_ar: 'نخالة قمح صافية غنية بالألياف. تستخدم للأعلاف الحيوانية ولبعض المخبوزات الصحية.',
-    description_en: 'Pure wheat bran rich in fiber. Used for animal feed and some healthy baked goods.',
+    imageUrl: '/assets/Al Jawhara Bran bag.png',
+    description_ar: 'نخالة الجوهرة الصافية. غنية بالألياف الطبيعية، تستخدم للأغراض الصحية والأعلاف.',
+    description_en: 'Pure Al-Jawhara Bran. Rich in natural fibers, used for healthy purposes and feed.',
+    active: true
+  },
+  {
+    id: 'p1',
+    name_ar: 'دقيق الشفاء - فاخر',
+    name_en: 'Al-Shifa Flour - Premium',
+    weight: '25kg',
+    category: 'flour',
+    price: 45.00,
+    imageUrl: 'https://placehold.co/400x600/16a34a/ffffff?text=Al-Shifa+Original',
+    description_ar: 'دقيق الشفاء الكلاسيكي الفاخر. المنتج الأصلي الذي تثق به الأسر والمخابز منذ سنوات.',
+    description_en: 'Classic Al-Shifa Premium Flour. The original product trusted by families and bakeries for years.',
     active: true
   },
   {
@@ -149,9 +149,9 @@ const INITIAL_PRODUCTS: Product[] = [
     weight: '1kg',
     category: 'flour',
     price: 5.50,
-    imageUrl: 'https://placehold.co/400x600/fbbf24/000000?text=1kg+Pack',
-    description_ar: 'عبوة منزلية اقتصادية سهلة التخزين. نفس جودة دقيق الشفاء الفاخر في عبوة مناسبة للاستخدام اليومي.',
-    description_en: 'Economical household pack, easy to store. Same quality as Al-Shifa Premium flour in a package suitable for daily use.',
+    imageUrl: 'https://placehold.co/400x600/eab308/ffffff?text=1kg+Pack',
+    description_ar: 'عبوة منزلية اقتصادية سهلة التخزين. نفس جودة دقيق الشفاء الفاخر.',
+    description_en: 'Economical household pack, easy to store. Same quality as Al-Shifa Premium flour.',
     active: true
   }
 ];
@@ -492,8 +492,11 @@ const Header = () => {
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('home')}>
-          <div className="bg-brand-600 text-white p-2 rounded-lg"><Wheat size={28} /></div>
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('home')}>
+          {/* Logo Replacement: Using local asset reference as requested */}
+          <div className="w-12 h-12 rounded-full border-2 border-brand-100 shadow-md overflow-hidden bg-white">
+             <img src="/assets/alshifa flour mills logo green circle.png" alt="Logo" className="w-full h-full object-cover" onError={(e) => {e.currentTarget.src = "https://placehold.co/100x100/16a34a/ffffff?text=Logo"}}/>
+          </div>
           <div><h1 className="text-xl font-bold text-brand-900 leading-tight">{t.brand}</h1><p className="text-xs text-brand-600 hidden md:block">{t.tagline}</p></div>
         </div>
         <nav className="hidden lg:flex gap-6 text-stone-600 font-medium text-sm xl:text-base">
@@ -637,7 +640,7 @@ const ProductCard = ({ product, onClick, onAddToCart, lang, t }: any) => {
     <div onClick={() => onClick(product)} className="bg-white rounded-2xl shadow-sm hover:shadow-2xl hover:-translate-y-2 transition duration-500 cursor-pointer border border-stone-100 overflow-hidden group flex flex-col relative">
       <div className="h-64 bg-stone-50 p-8 flex items-center justify-center relative overflow-hidden group-hover:bg-brand-50 transition duration-500">
         <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/40 to-white/0 opacity-0 group-hover:opacity-100 transition duration-700 transform -translate-x-full group-hover:translate-x-full z-10" style={{transitionDuration: '1s'}}></div>
-        <img src={product.imageUrl} alt={lang === 'ar' ? product.name_ar : product.name_en} className="max-h-full object-contain group-hover:scale-110 transition duration-500 z-20" />
+        <img src={product.imageUrl} alt={lang === 'ar' ? product.name_ar : product.name_en} className="max-h-full object-contain group-hover:scale-110 transition duration-500 z-20" onError={(e) => {e.currentTarget.src = `https://placehold.co/400x600/16a34a/ffffff?text=${encodeURIComponent(product.name_en)}`}} />
         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-brand-800 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm z-20">{product.weight}</div>
       </div>
       <div className="p-6 flex-1 flex flex-col">
@@ -682,7 +685,7 @@ const ProductList = () => {
             <div className="md:w-1/2 bg-gradient-to-br from-stone-100 to-stone-200 relative flex items-center justify-center p-12 overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at center, #d97706 1px, transparent 1px)', backgroundSize: '24px 24px'}}></div>
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-white/40 to-transparent pointer-events-none"></div>
-                <img src={selectedProduct.imageUrl} className="w-full h-full object-contain product-float z-20 relative" alt="Product 3D View"/>
+                <img src={selectedProduct.imageUrl} className="w-full h-full object-contain product-float z-20 relative" alt="Product 3D View" onError={(e) => {e.currentTarget.src = `https://placehold.co/400x600/16a34a/ffffff?text=${encodeURIComponent(selectedProduct.name_en)}`}}/>
                 <div className="absolute bottom-8 left-8 bg-white/90 backdrop-blur px-4 py-2 rounded-xl shadow-lg border border-white z-20 flex items-center gap-2 animate-in slide-in-from-bottom-4 delay-300 fill-mode-both"><Award className="text-brand-600" size={20}/><div><p className="text-xs text-stone-500 font-bold uppercase">Premium Quality</p><p className="text-sm font-bold text-stone-800">ISO 22000 Certified</p></div></div>
             </div>
             <div className="md:w-1/2 p-8 md:p-12 flex flex-col overflow-y-auto">
@@ -817,7 +820,7 @@ const Login = () => {
     <div className="min-h-screen bg-stone-50 flex">
       <div className="hidden lg:flex lg:w-1/2 bg-brand-900 relative items-center justify-center overflow-hidden">
          <div className="absolute inset-0 z-0"><img src="https://images.unsplash.com/photo-1634486663261-758992e4e112?q=80&w=2000&auto=format&fit=crop" className="w-full h-full object-cover opacity-50 mix-blend-overlay" alt="Milling Background" /><div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent"></div></div>
-         <div className="relative z-10 p-16 text-white max-w-xl"><div className="bg-white/10 backdrop-blur-md w-16 h-16 rounded-2xl flex items-center justify-center mb-8 border border-white/20 shadow-2xl"><Wheat size={40} className="text-brand-300"/></div><h1 className="text-5xl font-black mb-6 leading-tight">{t.brand}</h1><p className="text-xl text-brand-100 leading-relaxed font-light">{t.hero_sub}</p></div>
+         <div className="relative z-10 p-16 text-white max-w-xl"><div className="bg-white/10 backdrop-blur-md w-16 h-16 rounded-2xl flex items-center justify-center mb-8 border border-white/20 shadow-2xl"><img src="/assets/alshifa flour mills logo green circle.png" className="w-full h-full object-contain p-1" /></div><h1 className="text-5xl font-black mb-6 leading-tight">{t.brand}</h1><p className="text-xl text-brand-100 leading-relaxed font-light">{t.hero_sub}</p></div>
       </div>
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 md:p-12 relative">
          <div className="w-full max-w-md animate-in slide-in-from-bottom-8 duration-500">
@@ -855,7 +858,26 @@ const Footer = () => {
     <footer className="bg-stone-950 text-stone-400 pt-20 pb-8 mt-12 border-t border-brand-900">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          <div className="space-y-6"><div className="flex items-center gap-3 text-white"><div className="bg-brand-600 p-2 rounded-lg"><Wheat size={24} className="text-white"/></div><span className="text-2xl font-bold">{t.brand}</span></div><p className="text-stone-400 leading-relaxed text-sm">{t.footer_desc}</p><div className="flex gap-4"><a href="#" className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center hover:bg-brand-600 hover:text-white transition duration-300"><Facebook size={18}/></a><a href="#" className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center hover:bg-brand-600 hover:text-white transition duration-300"><Twitter size={18}/></a><a href="#" className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center hover:bg-brand-600 hover:text-white transition duration-300"><Instagram size={18}/></a><a href="#" className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center hover:bg-brand-600 hover:text-white transition duration-300"><Linkedin size={18}/></a></div></div>
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 text-white">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden">
+                   <img src="/assets/alshifa flour mills logo green circle.png" className="w-full h-full object-cover p-0.5" />
+                </div>
+                <span className="text-2xl font-bold">{t.brand}</span>
+            </div>
+            <p className="text-stone-400 leading-relaxed text-sm">{t.footer_desc}</p>
+            <div className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                    <a href="#" className="w-9 h-9 rounded-full bg-green-700 text-white flex items-center justify-center hover:bg-green-600 hover:scale-110 transition duration-300 shadow-sm border border-green-600"><Facebook size={16}/></a>
+                    <a href="#" className="w-9 h-9 rounded-full bg-green-700 text-white flex items-center justify-center hover:bg-green-600 hover:scale-110 transition duration-300 shadow-sm border border-green-600"><Instagram size={16}/></a>
+                    <a href="#" className="w-9 h-9 rounded-full bg-green-700 text-white flex items-center justify-center hover:bg-green-600 hover:scale-110 transition duration-300 shadow-sm border border-green-600"><Twitter size={16}/></a>
+                    <a href="#" className="w-9 h-9 rounded-full bg-green-700 text-white flex items-center justify-center hover:bg-green-600 hover:scale-110 transition duration-300 shadow-sm border border-green-600"><Video size={16}/></a>
+                    <a href="#" className="w-9 h-9 rounded-full bg-green-700 text-white flex items-center justify-center hover:bg-green-600 hover:scale-110 transition duration-300 shadow-sm border border-green-600"><MessageCircle size={16}/></a>
+                    <a href="#" className="w-9 h-9 rounded-full bg-green-700 text-white flex items-center justify-center hover:bg-green-600 hover:scale-110 transition duration-300 shadow-sm border border-green-600"><Send size={16}/></a>
+                </div>
+                <a href="#" className="text-brand-500 font-bold hover:underline text-sm dir-ltr text-left">@alshifaflourmills</a>
+            </div>
+          </div>
           <div><h4 className="text-white font-bold text-lg mb-6 flex items-center gap-2 before:content-[''] before:w-2 before:h-2 before:bg-brand-500 before:rounded-full">{lang === 'ar' ? 'روابط سريعة' : 'Quick Links'}</h4><ul className="space-y-4"><li><button onClick={() => setView('home')} className="hover:text-brand-500 transition flex items-center gap-2"><ChevronRight size={14}/> {t.nav_home}</button></li><li><button onClick={() => setView('products')} className="hover:text-brand-500 transition flex items-center gap-2"><ChevronRight size={14}/> {t.nav_products}</button></li><li><button onClick={() => setView('about')} className="hover:text-brand-500 transition flex items-center gap-2"><ChevronRight size={14}/> {t.nav_about}</button></li><li><button onClick={() => setView('careers')} className="hover:text-brand-500 transition flex items-center gap-2"><ChevronRight size={14}/> {t.nav_careers}</button></li></ul></div>
           <div><h4 className="text-white font-bold text-lg mb-6 flex items-center gap-2 before:content-[''] before:w-2 before:h-2 before:bg-brand-500 before:rounded-full">{lang === 'ar' ? 'معلومات التواصل' : 'Contact Info'}</h4><ul className="space-y-4 text-sm"><li className="flex items-start gap-3"><MapPin size={20} className="text-brand-600 mt-1 shrink-0"/> <span>Industrial City, Phase 3,<br/>Riyadh, Saudi Arabia</span></li><li className="flex items-center gap-3"><Phone size={20} className="text-brand-600 shrink-0"/> <span dir="ltr">+966 12 345 6789</span></li><li className="flex items-center gap-3"><Mail size={20} className="text-brand-600 shrink-0"/> <span>info@alshifa.com</span></li></ul></div>
           <div><h4 className="text-white font-bold text-lg mb-6 flex items-center gap-2 before:content-[''] before:w-2 before:h-2 before:bg-brand-500 before:rounded-full">{t.subscribe}</h4><p className="text-xs mb-4">{lang === 'ar' ? 'اشترك في قائمتنا البريدية للحصول على آخر الأخبار والعروض.' : 'Subscribe to our newsletter for latest news and offers.'}</p><div className="flex flex-col gap-2"><input type="email" placeholder={t.email} className="bg-stone-800 border-none text-white p-3 rounded-lg focus:ring-1 focus:ring-brand-500 outline-none text-sm" /><button className="bg-brand-600 text-white py-3 rounded-lg font-bold text-sm hover:bg-brand-700 transition">{t.subscribe_btn}</button></div></div>
