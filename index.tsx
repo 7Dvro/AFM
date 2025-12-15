@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { 
   Menu, X, Globe, ShoppingCart, User, Wheat, MapPin, Phone, Mail, 
@@ -6,7 +6,7 @@ import {
   Facebook, Twitter, Instagram, Linkedin, Factory, Truck, Award,
   Calendar, Briefcase, FileText, Upload, Clock, ArrowRight, Save, Image as ImageIcon,
   LayoutDashboard, LogOut, Bell, Lock, ShieldCheck, Package, Star, Info, Leaf, DollarSign,
-  Eye, EyeOff, LogIn, MessageCircle, Send, Video, Palette
+  Eye, EyeOff, LogIn, MessageCircle, Send, Video, Palette, Ban, History, FileBox, Settings, ToggleLeft, ToggleRight, Users, Download, ChevronDown, Activity, Map, PieChart, TrendingUp, AlertCircle
 } from 'lucide-react';
 
 // --- TYPES & INTERFACES ---
@@ -66,6 +66,50 @@ interface JobItem {
   description_ar: string;
   description_en: string;
   postedDate: string;
+}
+
+interface JobApplication {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  applicantName: string;
+  applicantEmail: string;
+  cvUrl: string; // Base64 string for demo
+  date: string;
+  status: 'new' | 'reviewed';
+  downloaded: boolean; // Track if CV was downloaded
+}
+
+interface UserProfile {
+    id: string;
+    name: string;
+    email: string;
+    role: 'admin' | 'user';
+    status: 'active' | 'banned';
+    joinDate: string;
+    ordersCount: number;
+    phone: string;
+}
+
+interface MessageItem {
+    id: string;
+    name: string;
+    email: string;
+    message: string;
+    date: string;
+    status: 'new' | 'read';
+}
+
+interface PageSettings {
+    [key: string]: boolean;
+}
+
+interface NotificationItem {
+    id: string;
+    type: 'order' | 'comment' | 'job' | 'system';
+    message: string;
+    time: string;
+    read: boolean;
 }
 
 // --- MOCK DATA ---
@@ -232,6 +276,26 @@ const INITIAL_JOBS: JobItem[] = [
     postedDate: '2023-12-01'
   }
 ];
+
+const INITIAL_USERS: UserProfile[] = [
+    { id: 'u1', name: 'Admin User', email: 'mohemadmuzamil@gmail.com', role: 'admin', status: 'active', joinDate: '2023-01-01', ordersCount: 0, phone: '+966500000000' },
+    { id: 'u2', name: 'John Doe', email: 'john@example.com', role: 'user', status: 'active', joinDate: '2024-03-15', ordersCount: 5, phone: '+966511111111' },
+    { id: 'u3', name: 'Jane Smith', email: 'jane@example.com', role: 'user', status: 'banned', joinDate: '2024-04-10', ordersCount: 1, phone: '+966522222222' },
+];
+
+const INITIAL_MESSAGES: MessageItem[] = [
+    { id: 'm1', name: 'Ahmed Ali', email: 'ahmed@test.com', message: 'I need a quote for 50 tons of flour.', date: '2024-05-20', status: 'new' },
+];
+
+const INITIAL_PAGE_SETTINGS: PageSettings = {
+    home: true,
+    products: true,
+    about: true,
+    contact: true,
+    news: true,
+    events: true,
+    careers: true
+};
 
 // --- THEME DATA (9 Calming, Professional Themes) ---
 const THEMES = {
@@ -445,6 +509,43 @@ const TRANSLATIONS = {
     upload_image: 'رفع صورة',
     currency: 'ر.س',
     choose_theme: 'اختر المظهر',
+    users_manage: 'إدارة المستخدمين',
+    pages_manage: 'إدارة الصفحات',
+    messages_manage: 'الرسائل والشكاوى',
+    active: 'نشط',
+    banned: 'محظور',
+    role: 'الدور',
+    join_date: 'تاريخ الانضمام',
+    actions: 'إجراءات',
+    ban: 'حظر',
+    unban: 'فك الحظر',
+    history: 'سجل الطلبات',
+    no_orders: 'لا توجد طلبات سابقة',
+    page_name: 'اسم الصفحة',
+    visibility: 'الحالة',
+    visible: 'ظاهر',
+    hidden: 'مخفي',
+    status: 'الحالة',
+    mark_read: 'تحديد كمقروء',
+    new: 'جديد',
+    read: 'مقروء',
+    from: 'من',
+    or_url: 'أو رابط صورة',
+    view_applications: 'عرض الطلبات',
+    no_applications: 'لا توجد طلبات مقدمة لهذه الوظيفة حتى الآن.',
+    download_cv: 'تحميل السيرة الذاتية',
+    applicant_name: 'اسم المتقدم',
+    application_date: 'تاريخ التقديم',
+    back_to_jobs: 'العودة للوظائف',
+    cv_uploaded: 'تم إرفاق السيرة الذاتية',
+    cv_downloaded_badge: 'تم التحميل',
+    analytics_report: 'تقرير المبيعات والتحليلات',
+    live_visitors: 'الزوار الآن',
+    live_map: 'خريطة التفاعل المباشر',
+    top_selling: 'المنتجات الأكثر مبيعاً',
+    sales_distribution: 'توزيع المبيعات (مخابز/أفراد)',
+    notifications: 'الإشعارات',
+    no_notifications: 'لا توجد إشعارات جديدة',
     // Auth Translations
     welcome_back: 'مرحباً بعودتك',
     welcome_sub: 'سجل دخولك للمتابعة',
@@ -534,6 +635,43 @@ const TRANSLATIONS = {
     upload_image: 'Upload Image',
     currency: 'SAR',
     choose_theme: 'Choose Theme',
+    users_manage: 'Manage Users',
+    pages_manage: 'Manage Pages',
+    messages_manage: 'Messages & Complaints',
+    active: 'Active',
+    banned: 'Banned',
+    role: 'Role',
+    join_date: 'Join Date',
+    actions: 'Actions',
+    ban: 'Ban',
+    unban: 'Unban',
+    history: 'Order History',
+    no_orders: 'No previous orders',
+    page_name: 'Page Name',
+    visibility: 'Visibility',
+    visible: 'Visible',
+    hidden: 'Hidden',
+    status: 'Status',
+    mark_read: 'Mark Read',
+    new: 'New',
+    read: 'Read',
+    from: 'From',
+    or_url: 'Or Image URL',
+    view_applications: 'View Applications',
+    no_applications: 'No applications for this job yet.',
+    download_cv: 'Download CV',
+    applicant_name: 'Applicant Name',
+    application_date: 'Applied Date',
+    back_to_jobs: 'Back to Jobs',
+    cv_uploaded: 'CV Attached',
+    cv_downloaded_badge: 'Downloaded',
+    analytics_report: 'Sales & Analytics Report',
+    live_visitors: 'Live Visitors',
+    live_map: 'Live Interactions Map',
+    top_selling: 'Top Selling Products',
+    sales_distribution: 'Sales Distribution',
+    notifications: 'Notifications',
+    no_notifications: 'No new notifications',
     // Auth Translations
     welcome_back: 'Welcome Back',
     welcome_sub: 'Sign in to continue',
@@ -572,6 +710,21 @@ const AppContext = createContext<{
   jobs: JobItem[];
   setJobs: (j: JobItem[]) => void;
   setTheme: (t: ThemeName) => void;
+  // Admin Features
+  usersList: UserProfile[];
+  setUsersList: (u: UserProfile[]) => void;
+  messages: MessageItem[];
+  setMessages: (m: MessageItem[]) => void;
+  pageSettings: PageSettings;
+  setPageSettings: (p: PageSettings) => void;
+  // Job Applications
+  jobApplications: JobApplication[];
+  addJobApplication: (app: JobApplication) => void;
+  markCVDownloaded: (appId: string) => void;
+  // Notifications
+  notifications: NotificationItem[];
+  addNotification: (note: NotificationItem) => void;
+  clearNotifications: () => void;
 }>({} as any);
 
 // --- FIREBASE SERVICE (MOCKED) ---
@@ -605,7 +758,7 @@ const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative z-10 animate-in fade-in zoom-in-95 duration-200">
         <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-20">
           <h3 className="text-xl font-bold">{title}</h3>
           <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full"><X size={20}/></button>
@@ -619,7 +772,7 @@ const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
 };
 
 const Header = () => {
-  const { lang, setLang, view, setView, cart, user, logout, setTheme } = useContext(AppContext);
+  const { lang, setLang, view, setView, cart, user, logout, setTheme, pageSettings } = useContext(AppContext);
   const t = TRANSLATIONS[lang];
   const [mobileMenu, setMobileMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
@@ -627,6 +780,9 @@ const Header = () => {
 
   // Helper to get color preview from THEMES
   const getColorPreview = (themeName: ThemeName) => `rgb(${THEMES[themeName]['--brand-600']})`;
+
+  // Filter visible nav items based on admin settings
+  const navItems = ['home', 'products', 'news', 'events', 'careers', 'about', 'contact'].filter(item => pageSettings[item as keyof PageSettings] !== false);
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -639,7 +795,7 @@ const Header = () => {
           <div><h1 className="text-xl font-bold text-brand-900 leading-tight">{t.brand}</h1><p className="text-xs text-brand-600 hidden md:block">{t.tagline}</p></div>
         </div>
         <nav className="hidden lg:flex gap-6 text-stone-600 font-medium text-sm xl:text-base">
-          {['home', 'products', 'news', 'events', 'careers', 'about', 'contact'].map((v: any) => (
+          {navItems.map((v: any) => (
              <button key={v} onClick={() => setView(v)} className={`hover:text-brand-600 transition ${view === v ? 'text-brand-600 font-bold' : ''}`}>{t[`nav_${v}` as keyof typeof t]}</button>
           ))}
         </nav>
@@ -682,7 +838,7 @@ const Header = () => {
       </div>
       {mobileMenu && (
         <div className="lg:hidden bg-white border-t p-4 flex flex-col gap-4 shadow-lg animate-in slide-in-from-top-2 z-50 absolute w-full">
-          {['home', 'products', 'news', 'events', 'careers', 'about', 'contact'].map((v: any) => (
+          {navItems.map((v: any) => (
              <button key={v} onClick={() => { setView(v); setMobileMenu(false); }} className="text-start py-2 border-b border-stone-100 last:border-0">{t[`nav_${v}` as keyof typeof t]}</button>
           ))}
         </div>
@@ -733,11 +889,52 @@ const EventsView = () => {
 };
 
 const CareersView = () => {
-  const { lang, jobs } = useContext(AppContext);
+  const { lang, jobs, addJobApplication } = useContext(AppContext);
   const t = TRANSLATIONS[lang];
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
   const [appSent, setAppSent] = useState(false);
-  const handleApply = (e: React.FormEvent) => { e.preventDefault(); setTimeout(() => { setAppSent(true); setTimeout(() => { setAppSent(false); setSelectedJob(null); }, 3000); }, 1000); };
+  const [formData, setFormData] = useState({ name: '', email: '', cvUrl: '' });
+  const [fileName, setFileName] = useState('');
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        setFileName(file.name);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setFormData({ ...formData, cvUrl: reader.result as string });
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
+  const handleApply = (e: React.FormEvent) => { 
+    e.preventDefault(); 
+    if (!selectedJob) return;
+    
+    const job = jobs.find(j => j.id === selectedJob);
+    const newApp: JobApplication = {
+        id: Math.random().toString(36).substr(2, 9),
+        jobId: selectedJob,
+        jobTitle: lang === 'ar' ? job?.title_ar || '' : job?.title_en || '',
+        applicantName: formData.name,
+        applicantEmail: formData.email,
+        cvUrl: formData.cvUrl,
+        date: new Date().toISOString().split('T')[0],
+        status: 'new',
+        downloaded: false
+    };
+
+    addJobApplication(newApp);
+    setAppSent(true); 
+    
+    setTimeout(() => { 
+        setAppSent(false); 
+        setSelectedJob(null); 
+        setFormData({ name: '', email: '', cvUrl: '' });
+        setFileName('');
+    }, 3000); 
+  };
 
   return (
     <div className="container mx-auto px-4 py-16">
@@ -752,14 +949,31 @@ const CareersView = () => {
             </div>
           ))}
         </div>
-        <div className="bg-stone-50 p-8 rounded-2xl h-fit border border-stone-100 sticky top-24">
-          {!selectedJob ? (<div className="text-center text-stone-400 py-12"><Briefcase size={48} className="mx-auto mb-4 opacity-30"/><p>{lang === 'ar' ? 'اختر وظيفة للتقديم عليها' : 'Select a job to apply'}</p></div>) : appSent ? (<div className="text-center text-green-600 py-12"><CheckCircle size={64} className="mx-auto mb-6"/><h4 className="text-xl font-bold">{t.app_success}</h4></div>) : (
+        <div className="bg-stone-50 p-8 rounded-2xl h-fit border border-stone-100 sticky top-24 shadow-lg">
+          {!selectedJob ? (<div className="text-center text-stone-400 py-12"><Briefcase size={48} className="mx-auto mb-4 opacity-30"/><p>{lang === 'ar' ? 'اختر وظيفة للتقديم عليها' : 'Select a job to apply'}</p></div>) : appSent ? (<div className="text-center text-green-600 py-12 animate-in fade-in zoom-in"><CheckCircle size={64} className="mx-auto mb-6"/><h4 className="text-xl font-bold">{t.app_success}</h4></div>) : (
              <form onSubmit={handleApply} className="space-y-4 animate-in fade-in">
-               <h3 className="text-xl font-bold text-stone-900 mb-6 border-b pb-4">{t.apply_now}: <span className="text-brand-600">{jobs.find(j => j.id === selectedJob)?.[lang === 'ar' ? 'title_ar' : 'title_en']}</span></h3>
-               <div><label className="block text-sm font-bold text-stone-700 mb-1">{t.name}</label><input required type="text" className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"/></div>
-               <div><label className="block text-sm font-bold text-stone-700 mb-1">{t.email}</label><input required type="email" className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"/></div>
-               <div><label className="block text-sm font-bold text-stone-700 mb-1">{t.upload_cv}</label><div className="border-2 border-dashed border-stone-300 rounded-lg p-6 text-center hover:bg-white transition cursor-pointer group"><Upload size={24} className="mx-auto text-stone-400 group-hover:text-brand-500 mb-2"/><span className="text-xs text-stone-500">Click to upload file</span><input type="file" accept=".pdf,.doc,.docx" className="hidden" /></div></div>
-               <button className="w-full bg-brand-600 text-white py-3 rounded-lg font-bold hover:bg-brand-700 transition shadow-lg mt-4">{t.submit_app}</button>
+               <h3 className="text-xl font-bold text-stone-900 mb-6 border-b pb-4 flex items-center gap-2"><Briefcase size={20} className="text-brand-600"/> {t.apply_now}: <span className="text-brand-600">{jobs.find(j => j.id === selectedJob)?.[lang === 'ar' ? 'title_ar' : 'title_en']}</span></h3>
+               <div><label className="block text-sm font-bold text-stone-700 mb-1">{t.name}</label><input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-white"/></div>
+               <div><label className="block text-sm font-bold text-stone-700 mb-1">{t.email}</label><input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-white"/></div>
+               <div>
+                   <label className="block text-sm font-bold text-stone-700 mb-1">{t.upload_cv}</label>
+                   <div className={`border-2 border-dashed rounded-lg p-6 text-center transition cursor-pointer group relative ${formData.cvUrl ? 'border-green-500 bg-green-50' : 'border-stone-300 hover:bg-white'}`}>
+                       <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} required className="absolute inset-0 opacity-0 cursor-pointer" />
+                       {formData.cvUrl ? (
+                           <div className="text-green-600 flex flex-col items-center gap-2">
+                               <CheckCircle size={28}/>
+                               <span className="font-bold text-sm">{fileName}</span>
+                               <span className="text-xs">{t.cv_uploaded}</span>
+                           </div>
+                       ) : (
+                           <div className="flex flex-col items-center">
+                               <Upload size={24} className="mx-auto text-stone-400 group-hover:text-brand-500 mb-2"/>
+                               <span className="text-xs text-stone-500 font-medium">Click to upload file</span>
+                           </div>
+                       )}
+                   </div>
+               </div>
+               <button className="w-full bg-brand-600 text-white py-3 rounded-lg font-bold hover:bg-brand-700 transition shadow-lg mt-4 disabled:opacity-50 disabled:cursor-not-allowed" disabled={!formData.cvUrl}>{t.submit_app}</button>
              </form>
           )}
         </div>
@@ -804,7 +1018,7 @@ const ProductCard = ({ product, onClick, onAddToCart, lang, t }: any) => {
         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-brand-800 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm z-20">{product.weight}</div>
       </div>
       <div className="p-6 flex-1 flex flex-col">
-        <div className="flex justify-between items-start mb-2"><span className="text-xs text-stone-400 uppercase font-semibold">{product.category}</span><span className="text-lg font-bold text-brand-600">{product.price.toFixed(2)} {t.currency}</span></div>
+        <div className="flex justify-between items-start mb-2"><span className="text-xs text-stone-400 uppercase font-semibold">{product.category}</span><span className="text-lg font-bold text-brand-600">{Number(product.price).toFixed(2)} {t.currency}</span></div>
         <h4 className="text-xl font-bold text-stone-800 mb-3 leading-tight line-clamp-1">{lang === 'ar' ? product.name_ar : product.name_en}</h4>
         <p className="text-stone-500 text-sm mb-6 line-clamp-2 flex-1">{lang === 'ar' ? product.description_ar : product.description_en}</p>
         <div className="mt-auto pt-4 border-t border-stone-100 flex items-center justify-between gap-3">
@@ -850,7 +1064,7 @@ const ProductList = () => {
             </div>
             <div className="md:w-1/2 p-8 md:p-12 flex flex-col overflow-y-auto">
                 <div className="mb-auto">
-                    <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><span className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">{selectedProduct.category}</span><div className="flex text-brand-500">{[1,2,3,4,5].map(i => <Star key={i} size={14} fill="currentColor" />)}</div><span className="text-stone-400 text-xs">(4.9/5)</span></div><span className="text-3xl font-bold text-brand-600">{selectedProduct.price.toFixed(2)} <span className="text-lg text-stone-400">{t.currency}</span></span></div>
+                    <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><span className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">{selectedProduct.category}</span><div className="flex text-brand-500">{[1,2,3,4,5].map(i => <Star key={i} size={14} fill="currentColor" />)}</div><span className="text-stone-400 text-xs">(4.9/5)</span></div><span className="text-3xl font-bold text-brand-600">{Number(selectedProduct.price).toFixed(2)} <span className="text-lg text-stone-400">{t.currency}</span></span></div>
                     <h2 className="text-4xl md:text-5xl font-black text-stone-900 mb-6 leading-tight">{lang === 'ar' ? selectedProduct.name_ar : selectedProduct.name_en}</h2>
                     <p className="text-stone-600 text-lg leading-relaxed mb-8 border-l-4 border-brand-500 pl-4 rtl:pl-0 rtl:border-l-0 rtl:border-r-4 rtl:pr-4">{lang === 'ar' ? selectedProduct.description_ar : selectedProduct.description_en}</p>
                     <div className="grid grid-cols-3 gap-4 mb-8">
@@ -859,7 +1073,7 @@ const ProductList = () => {
                         <div className="bg-stone-50 p-4 rounded-xl text-center border border-stone-100"><Package size={20} className="mx-auto text-blue-600 mb-2"/><p className="text-xs text-stone-500 font-bold uppercase">Weight</p><p className="font-bold text-stone-800">{selectedProduct.weight}</p></div>
                     </div>
                 </div>
-                <div className="mt-8 pt-8 border-t border-stone-100"><div className="flex items-center gap-4"><div className="flex items-center gap-3 bg-stone-100 rounded-xl p-2"><button onClick={() => setModalQty(Math.max(1, modalQty - 1))} className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-sm text-stone-600 hover:text-brand-600 hover:scale-105 transition font-bold text-lg disabled:opacity-50" disabled={modalQty <= 1}><Minus size={18}/></button><span className="w-8 text-center font-bold text-xl text-stone-800">{modalQty}</span><button onClick={() => setModalQty(modalQty + 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-sm text-stone-600 hover:text-brand-600 hover:scale-105 transition font-bold text-lg"><Plus size={18}/></button></div><button onClick={() => { addToCart(selectedProduct, modalQty); setSelectedProduct(null); }} className="flex-1 bg-stone-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-brand-600 hover:shadow-lg hover:shadow-brand-600/20 transition duration-300 flex items-center justify-center gap-3"><ShoppingCart size={20}/> {t.add_to_cart} - {(selectedProduct.price * modalQty).toFixed(2)} {t.currency}</button></div><p className="text-center text-xs text-stone-400 mt-4 flex items-center justify-center gap-1"><ShieldCheck size={12}/> {lang === 'ar' ? 'منتج أصلي ومضمون من مطاحن الشفاء' : 'Authentic & Guaranteed Product by Al-Shifa'}</p></div>
+                <div className="mt-8 pt-8 border-t border-stone-100"><div className="flex items-center gap-4"><div className="flex items-center gap-3 bg-stone-100 rounded-xl p-2"><button onClick={() => setModalQty(Math.max(1, modalQty - 1))} className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-sm text-stone-600 hover:text-brand-600 hover:scale-105 transition font-bold text-lg disabled:opacity-50" disabled={modalQty <= 1}><Minus size={18}/></button><span className="w-8 text-center font-bold text-xl text-stone-800">{modalQty}</span><button onClick={() => setModalQty(modalQty + 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-sm text-stone-600 hover:text-brand-600 hover:scale-105 transition font-bold text-lg"><Plus size={18}/></button></div><button onClick={() => { addToCart(selectedProduct, modalQty); setSelectedProduct(null); }} className="flex-1 bg-stone-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-brand-600 hover:shadow-lg hover:shadow-brand-600/20 transition duration-300 flex items-center justify-center gap-3"><ShoppingCart size={20}/> {t.add_to_cart} - {(Number(selectedProduct.price) * modalQty).toFixed(2)} {t.currency}</button></div><p className="text-center text-xs text-stone-400 mt-4 flex items-center justify-center gap-1"><ShieldCheck size={12}/> {lang === 'ar' ? 'منتج أصلي ومضمون من مطاحن الشفاء' : 'Authentic & Guaranteed Product by Al-Shifa'}</p></div>
             </div>
           </div>
         </div>
@@ -887,7 +1101,7 @@ const CartView = () => {
              {cart.map((item, idx) => (
                 <div key={idx} className="p-6 flex flex-col sm:flex-row items-center gap-6 border-b border-stone-100 last:border-0 hover:bg-stone-50/50 transition duration-300">
                     <div className="w-28 h-28 bg-stone-50 rounded-xl p-3 flex-shrink-0 border border-stone-100"><img src={item.imageUrl} className="w-full h-full object-contain mix-blend-multiply" alt={lang === 'ar' ? item.name_ar : item.name_en}/></div>
-                    <div className="flex-1 text-center sm:text-start"><div className="flex items-center gap-2 justify-center sm:justify-start mb-1"><span className="text-xs font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded uppercase">{item.category}</span>{item.weight && <span className="text-xs font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded">{item.weight}</span>}</div><h3 className="text-xl font-bold text-stone-800 mb-1">{lang === 'ar' ? item.name_ar : item.name_en}</h3><p className="text-sm text-brand-600 font-bold mb-1">{item.price.toFixed(2)} {t.currency}</p></div>
+                    <div className="flex-1 text-center sm:text-start"><div className="flex items-center gap-2 justify-center sm:justify-start mb-1"><span className="text-xs font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded uppercase">{item.category}</span>{item.weight && <span className="text-xs font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded">{item.weight}</span>}</div><h3 className="text-xl font-bold text-stone-800 mb-1">{lang === 'ar' ? item.name_ar : item.name_en}</h3><p className="text-sm text-brand-600 font-bold mb-1">{Number(item.price).toFixed(2)} {t.currency}</p></div>
                     <div className="flex items-center gap-3 bg-stone-100 rounded-xl p-1.5 mx-auto sm:mx-0"><button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-stone-600 hover:text-brand-600 hover:scale-105 transition disabled:opacity-50" disabled={item.quantity <= 1}><Minus size={16}/></button><span className="w-6 text-center font-bold text-stone-800">{item.quantity}</span><button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-stone-600 hover:text-brand-600 hover:scale-105 transition"><Plus size={16}/></button></div>
                     <div className="w-px h-10 bg-stone-200 hidden sm:block"></div>
                     <button onClick={() => removeFromCart(item.id)} className="p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition group flex-shrink-0" title={t.delete}><Trash2 size={22} className="group-hover:scale-110 transition"/></button>
@@ -899,7 +1113,7 @@ const CartView = () => {
         <div className="lg:col-span-4 relative">
             <div className="bg-stone-50 p-8 rounded-2xl border border-stone-200 sticky top-24 shadow-lg shadow-stone-200/50">
                 <h3 className="text-2xl font-bold text-stone-900 mb-6 flex items-center gap-2"><Package className="text-brand-600"/> {t.order_summary}</h3>
-                <div className="space-y-4 mb-8"><div className="flex justify-between text-stone-600"><span>{t.items_count}</span><span className="font-bold">{totalItems}</span></div><div className="flex justify-between text-stone-900 text-lg font-bold"><span>Total</span><span>{cart.reduce((acc, item) => acc + (item.price * item.quantity), 0).toFixed(2)} {t.currency}</span></div><div className="h-px bg-stone-200"></div></div>
+                <div className="space-y-4 mb-8"><div className="flex justify-between text-stone-600"><span>{t.items_count}</span><span className="font-bold">{totalItems}</span></div><div className="flex justify-between text-stone-900 text-lg font-bold"><span>Total</span><span>{cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0).toFixed(2)} {t.currency}</span></div><div className="h-px bg-stone-200"></div></div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1"><label className="text-xs font-bold text-stone-500 uppercase">{t.name}</label><input required type="text" className="w-full bg-white border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition font-medium" placeholder="Ex: John Doe"/></div>
                     <div className="space-y-1"><label className="text-xs font-bold text-stone-500 uppercase">{t.email}</label><input required type="email" className="w-full bg-white border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition font-medium text-start" dir="ltr" placeholder="Ex: john@example.com"/></div>
@@ -915,35 +1129,469 @@ const CartView = () => {
 };
 
 const AdminPanel = () => {
-  const { lang, products, setProducts, news, setNews, events, setEvents, jobs, setJobs, logout } = useContext(AppContext);
+  const { 
+    lang, products, setProducts, news, setNews, events, setEvents, jobs, setJobs, 
+    usersList, setUsersList, messages, setMessages, pageSettings, setPageSettings, 
+    jobApplications, markCVDownloaded, notifications, addNotification, logout 
+  } = useContext(AppContext);
   const t = TRANSLATIONS[lang];
   const [tab, setTab] = useState('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [formData, setFormData] = useState<any>({});
+  const [viewingUser, setViewingUser] = useState<UserProfile | null>(null);
+  const [viewingApplicationsForJobId, setViewingApplicationsForJobId] = useState<string | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [visitorCount, setVisitorCount] = useState(1243);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  // --- Real-time Simulation Effects ---
+  useEffect(() => {
+    // 1. Simulate Live Visitor fluctuations
+    const visitorInterval = setInterval(() => {
+        setVisitorCount(prev => prev + Math.floor(Math.random() * 5) - 2);
+    }, 5000);
+
+    // 2. Simulate Random Notifications (Simulating live site activity)
+    const notificationInterval = setInterval(() => {
+        const randomEvent = Math.random();
+        if (randomEvent > 0.7) {
+            const types = ['order', 'comment', 'job'] as const;
+            const type = types[Math.floor(Math.random() * types.length)];
+            let message = '';
+            if (type === 'order') message = lang === 'ar' ? 'تم استلام طلب شراء جديد بقيمة 450 ر.س' : 'New order received: 450 SAR';
+            if (type === 'comment') message = lang === 'ar' ? 'تعليق جديد على خبر: افتتاح خط الإنتاج' : 'New comment on: Production Line Launch';
+            if (type === 'job') message = lang === 'ar' ? 'تم استلام طلب توظيف جديد: مهندس جودة' : 'New job application: Quality Engineer';
+            
+            addNotification({
+                id: Date.now().toString(),
+                type,
+                message,
+                time: 'Just now',
+                read: false
+            });
+            showToast(message); // Also show as toast
+        }
+    }, 15000); // Every 15 seconds
+
+    return () => {
+        clearInterval(visitorInterval);
+        clearInterval(notificationInterval);
+    };
+  }, [lang, addNotification]);
+  
+  // Handlers for generic CRUD
   const handleEdit = (item: any) => { setEditingItem(item); setFormData({...item}); setIsModalOpen(true); };
   const handleAdd = () => { setEditingItem(null); setFormData({ imageUrl: '' }); setIsModalOpen(true); };
   const handleDelete = (id: string, list: any[], setter: any) => { if(confirm(t.delete + '?')) { setter(list.filter((i: any) => i.id !== id)); showToast(t.deleted_success); } };
-  const handleSave = (e: React.FormEvent) => { e.preventDefault(); const newItem = { ...formData, id: editingItem ? editingItem.id : Math.random().toString(36).substr(2, 9), ...(tab === 'jobs' && !editingItem ? { postedDate: new Date().toISOString().split('T')[0] } : {}) }; if (tab === 'products') { if (editingItem) setProducts(products.map(p => p.id === newItem.id ? newItem : p)); else setProducts([...products, newItem]); } else if (tab === 'news') { if (editingItem) setNews(news.map(n => n.id === newItem.id ? newItem : n)); else setNews([...news, newItem]); } else if (tab === 'events') { if (editingItem) setEvents(events.map(ev => ev.id === newItem.id ? newItem : ev)); else setEvents([...events, newItem]); } else if (tab === 'jobs') { if (editingItem) setJobs(jobs.map(j => j.id === newItem.id ? newItem : j)); else setJobs([...jobs, newItem]); } setIsModalOpen(false); showToast(t.saved_success); };
+  
+  const handleSave = (e: React.FormEvent) => { 
+    e.preventDefault(); 
+    const newItem = { 
+        ...formData, 
+        id: editingItem ? editingItem.id : Math.random().toString(36).substr(2, 9),
+        ...(tab === 'jobs' && !editingItem ? { postedDate: new Date().toISOString().split('T')[0] } : {}),
+        ...(tab === 'messages' && !editingItem ? { date: new Date().toISOString().split('T')[0], status: 'new' } : {})
+    }; 
+    
+    if (tab === 'products' && newItem.price) {
+        newItem.price = parseFloat(newItem.price);
+    }
+    
+    if (tab === 'products') { if (editingItem) setProducts(products.map(p => p.id === newItem.id ? newItem : p)); else setProducts([...products, newItem]); } 
+    else if (tab === 'news') { if (editingItem) setNews(news.map(n => n.id === newItem.id ? newItem : n)); else setNews([...news, newItem]); } 
+    else if (tab === 'events') { if (editingItem) setEvents(events.map(ev => ev.id === newItem.id ? newItem : ev)); else setEvents([...events, newItem]); } 
+    else if (tab === 'jobs') { if (editingItem) setJobs(jobs.map(j => j.id === newItem.id ? newItem : j)); else setJobs([...jobs, newItem]); }
+    
+    setIsModalOpen(false); 
+    showToast(t.saved_success); 
+  };
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => { setFormData({ ...formData, [e.target.name]: e.target.value }); };
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => { setFormData({ ...formData, imageUrl: reader.result as string }); }; reader.readAsDataURL(file); } };
+  
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => { 
+    const file = e.target.files?.[0]; 
+    if (file) { 
+        const reader = new FileReader(); 
+        reader.onloadend = () => { setFormData({ ...formData, imageUrl: reader.result as string }); }; 
+        reader.readAsDataURL(file); 
+    } 
+  };
+
+  const toggleUserBan = (id: string) => {
+    setUsersList(usersList.map(u => u.id === id ? { ...u, status: u.status === 'active' ? 'banned' : 'active' } : u));
+    showToast(t.saved_success);
+  };
+
+  const togglePageVisibility = (page: string) => {
+    setPageSettings({ ...pageSettings, [page]: !pageSettings[page] });
+    showToast(t.saved_success);
+  };
+
+  const handleDownloadCV = (app: JobApplication) => {
+      markCVDownloaded(app.id);
+      // Simulate download link click
+      const link = document.createElement('a');
+      link.href = app.cvUrl;
+      link.download = `CV_${app.applicantName.replace(/\s+/g, '_')}.pdf`; // Mock extension
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  };
+
+  const stats = [
+    { label: t.users_manage, value: usersList.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: t.total_products, value: products.length, icon: Package, color: 'text-green-600', bg: 'bg-green-50' },
+    { label: t.messages_manage, value: messages.length, icon: MessageCircle, color: 'text-orange-600', bg: 'bg-orange-50' },
+    { label: t.total_news, value: news.length, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
+  ];
+
+  const currentJobApplications = viewingApplicationsForJobId 
+    ? jobApplications.filter(app => app.jobId === viewingApplicationsForJobId)
+    : [];
 
   return (
     <div className="container mx-auto px-4 py-8">
       {toast && (<div className="fixed bottom-6 right-6 bg-stone-900 text-white px-6 py-4 rounded-xl shadow-2xl animate-in fade-in slide-in-from-bottom-4 z-[110] flex items-center gap-3"><CheckCircle className="text-green-500" size={24} /><span className="font-bold">{toast}</span></div>)}
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-64 bg-stone-900 text-white rounded-xl p-6 h-fit sticky top-24 shadow-xl"><h3 className="text-xl font-bold mb-8 px-2 flex items-center gap-2"><Wheat size={24} className="text-brand-500"/> Al-Shifa Admin</h3><nav className="flex flex-col gap-2"><button onClick={() => setTab('dashboard')} className={`px-4 py-3 rounded-lg text-start font-medium transition flex items-center gap-3 ${tab === 'dashboard' ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-stone-800 text-stone-400'}`}><LayoutDashboard size={18}/> {t.dashboard_overview}</button><div className="h-px bg-stone-800 my-2"></div>{['products', 'news', 'events', 'jobs'].map((t) => (<button key={t} onClick={() => setTab(t)} className={`px-4 py-3 rounded-lg text-start font-medium transition capitalize flex items-center gap-3 ${tab === t ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-stone-800 text-stone-400'}`}>{t === 'products' && <ShoppingCart size={18}/>}{t === 'news' && <FileText size={18}/>}{t === 'events' && <Calendar size={18}/>}{t === 'jobs' && <Briefcase size={18}/>}{t}</button>))}<div className="h-px bg-stone-800 my-2"></div><button onClick={logout} className="px-4 py-3 rounded-lg text-start font-medium text-red-400 hover:bg-stone-800 flex items-center gap-3"><LogOut size={18}/> {t.logout}</button></nav></div>
-        <div className="flex-1 bg-white rounded-xl shadow-sm border border-stone-200 p-8 min-h-[500px]">
-          {tab === 'dashboard' && (<div className="animate-in fade-in"><h2 className="text-3xl font-bold text-stone-800 mb-8">{t.dashboard_overview}</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"><div className="bg-blue-50 p-6 rounded-2xl border border-blue-100"><span className="text-3xl font-bold text-stone-800">{products.length}</span><h3 className="text-stone-500 font-medium">{t.total_products}</h3></div><div className="bg-purple-50 p-6 rounded-2xl border border-purple-100"><span className="text-3xl font-bold text-stone-800">{news.length}</span><h3 className="text-stone-500 font-medium">{t.total_news}</h3></div><div className="bg-orange-50 p-6 rounded-2xl border border-orange-100"><span className="text-3xl font-bold text-stone-800">{events.length}</span><h3 className="text-stone-500 font-medium">{t.total_events}</h3></div><div className="bg-green-50 p-6 rounded-2xl border border-green-100"><span className="text-3xl font-bold text-stone-800">{jobs.length}</span><h3 className="text-stone-500 font-medium">{t.total_jobs}</h3></div></div></div>)}
-          {tab === 'products' && (<div className="overflow-x-auto rounded-lg border border-stone-200"><table className="w-full text-left border-collapse"><thead className="bg-stone-50"><tr className="border-b border-stone-200 text-stone-500 text-sm uppercase"><th className="p-4">Name</th><th className="p-4">Price</th><th className="p-4">Actions</th></tr></thead><tbody>{products.map(p => (<tr key={p.id} className="hover:bg-stone-50/50"><td className="p-4 font-bold text-stone-700">{p.name_en}</td><td className="p-4">{p.price}</td><td className="p-4 flex gap-2"><button onClick={() => handleEdit(p)} className="p-2 text-blue-600"><Edit size={18}/></button><button onClick={() => handleDelete(p.id, products, setProducts)} className="p-2 text-red-600"><Trash2 size={18}/></button></td></tr>))}</tbody></table></div>)}
-          {/* ... other tabs simplified for brevity, logic remains same ... */}
-          {tab !== 'dashboard' && tab !== 'products' && <div className="text-center py-20 text-stone-400">Content for {tab}</div>}
+      
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Sidebar */}
+        <div className="w-full lg:w-72 bg-stone-900 text-white rounded-xl p-6 h-fit sticky top-24 shadow-xl flex flex-col">
+            <div className="flex items-center justify-between mb-8 px-2">
+                <h3 className="text-2xl font-bold flex items-center gap-2"><Wheat size={28} className="text-brand-500"/> Panel</h3>
+                <div className="relative">
+                    <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 hover:bg-stone-800 rounded-full transition">
+                        <Bell size={20} className={notifications.some(n => !n.read) ? 'text-brand-400 animate-pulse' : 'text-stone-400'}/>
+                        {notifications.some(n => !n.read) && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-stone-900"></span>}
+                    </button>
+                    {showNotifications && (
+                        <div className="absolute top-full left-0 rtl:right-auto rtl:left-full mt-2 w-72 bg-white text-stone-800 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 origin-top-left border border-stone-100">
+                            <div className="bg-stone-50 p-3 border-b border-stone-100 flex justify-between items-center"><span className="font-bold text-xs uppercase text-stone-500">{t.notifications}</span><span className="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">{notifications.length}</span></div>
+                            <div className="max-h-64 overflow-y-auto">
+                                {notifications.length === 0 ? <p className="text-center py-4 text-sm text-stone-400">{t.no_notifications}</p> : (
+                                    notifications.slice().reverse().map(n => (
+                                        <div key={n.id} className="p-3 border-b border-stone-50 hover:bg-brand-50 transition flex items-start gap-3">
+                                            <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${n.type === 'order' ? 'bg-green-500' : n.type === 'job' ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
+                                            <div><p className="text-xs font-bold text-stone-800 leading-tight">{n.message}</p><p className="text-[10px] text-stone-400 mt-1">{n.time}</p></div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+            
+            <nav className="flex flex-col gap-1.5 flex-1">
+                <button onClick={() => { setTab('dashboard'); setViewingApplicationsForJobId(null); }} className={`px-4 py-3 rounded-xl text-start font-medium transition flex items-center gap-3 ${tab === 'dashboard' ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-stone-800 text-stone-400'}`}><LayoutDashboard size={18}/> {t.dashboard_overview}</button>
+                <div className="text-xs font-bold text-stone-500 uppercase mt-4 mb-2 px-4">Content</div>
+                {['products', 'news', 'events', 'jobs'].map((item) => (
+                    <button key={item} onClick={() => { setTab(item); setViewingApplicationsForJobId(null); }} className={`px-4 py-3 rounded-xl text-start font-medium transition capitalize flex items-center gap-3 ${tab === item ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-stone-800 text-stone-400'}`}>
+                        {item === 'products' && <ShoppingCart size={18}/>}
+                        {item === 'news' && <FileText size={18}/>}
+                        {item === 'events' && <Calendar size={18}/>}
+                        {item === 'jobs' && <Briefcase size={18}/>}
+                        {item}
+                    </button>
+                ))}
+                <div className="text-xs font-bold text-stone-500 uppercase mt-4 mb-2 px-4">Management</div>
+                <button onClick={() => { setTab('users'); setViewingApplicationsForJobId(null); }} className={`px-4 py-3 rounded-xl text-start font-medium transition flex items-center gap-3 ${tab === 'users' ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-stone-800 text-stone-400'}`}><Users size={18}/> {t.users_manage}</button>
+                <button onClick={() => { setTab('pages'); setViewingApplicationsForJobId(null); }} className={`px-4 py-3 rounded-xl text-start font-medium transition flex items-center gap-3 ${tab === 'pages' ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-stone-800 text-stone-400'}`}><Settings size={18}/> {t.pages_manage}</button>
+                <button onClick={() => { setTab('messages'); setViewingApplicationsForJobId(null); }} className={`px-4 py-3 rounded-xl text-start font-medium transition flex items-center gap-3 ${tab === 'messages' ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-stone-800 text-stone-400'}`}><MessageCircle size={18}/> {t.messages_manage}</button>
+                <div className="h-px bg-stone-800 my-4"></div>
+                <button onClick={logout} className="px-4 py-3 rounded-xl text-start font-medium text-red-400 hover:bg-stone-800 flex items-center gap-3"><LogOut size={18}/> {t.logout}</button>
+            </nav>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 bg-white rounded-xl shadow-sm border border-stone-200 p-8 min-h-[600px]">
+          
+          {/* Dashboard */}
+          {tab === 'dashboard' && (
+            <div className="animate-in fade-in">
+                <div className="flex justify-between items-end mb-8">
+                    <div><h2 className="text-3xl font-bold text-stone-800 flex items-center gap-3"><LayoutDashboard className="text-brand-600"/> {t.dashboard_overview}</h2><p className="text-stone-500 mt-1">{t.analytics_report}</p></div>
+                    <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl font-bold animate-pulse"><Activity size={18}/> {t.live_visitors}: {visitorCount}</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    {stats.map((stat, idx) => (
+                        <div key={idx} className={`${stat.bg} p-6 rounded-2xl border border-transparent hover:border-stone-200 transition duration-300`}>
+                            <div className="flex justify-between items-start mb-4">
+                                <div className={`p-3 rounded-xl bg-white shadow-sm ${stat.color}`}><stat.icon size={24}/></div>
+                                <span className="text-3xl font-bold text-stone-800">{stat.value}</span>
+                            </div>
+                            <h3 className="text-stone-500 font-bold text-sm uppercase tracking-wider">{stat.label}</h3>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    {/* Live Map */}
+                    <div className="lg:col-span-2 bg-stone-900 rounded-2xl p-6 text-white overflow-hidden relative group">
+                        <div className="flex justify-between items-center mb-6 relative z-10">
+                            <h3 className="font-bold text-lg flex items-center gap-2"><Globe className="text-brand-500"/> {t.live_map}</h3>
+                            <span className="text-xs bg-brand-600 px-2 py-1 rounded animate-pulse">Live</span>
+                        </div>
+                        {/* CSS-only Map Representation */}
+                        <div className="relative w-full h-64 bg-stone-800/50 rounded-xl flex items-center justify-center overflow-hidden border border-stone-700">
+                            <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'radial-gradient(circle, #444 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
+                            {/* World Map SVG Silhouette */}
+                            <svg viewBox="0 0 1000 500" className="w-full h-full opacity-30 fill-stone-500"><path d="M842,168c1.8,-1.8 1.8,-3.6 2.7,-3.6c0.9,0 2.7,2.7 3.6,3.6c0.9,0.9 2.7,2.7 3.6,3.6c0.9,0.9 2.7,0.9 3.6,2.7c0.9,1.8 0.9,3.6 -0.9,4.5c-1.8,0.9 -1.8,2.7 -2.7,4.5c-0.9,1.8 -1.8,2.7 -3.6,3.6c-1.8,0.9 -3.6,0 -4.5,-1.8c-0.9,-1.8 -2.7,-2.7 -3.6,-4.5c-0.9,-1.8 -0.9,-3.6 0,-5.4c0.9,-1.8 0.9,-3.6 1.8,-7.2ZM195,168c1.8,-2.7 4.5,-2.7 6.3,-2.7c1.8,0 2.7,1.8 3.6,3.6c0.9,1.8 1.8,3.6 1.8,5.4c0,1.8 0,3.6 -0.9,5.4c-0.9,1.8 -2.7,2.7 -4.5,2.7c-1.8,0 -3.6,-1.8 -4.5,-3.6c-0.9,-1.8 -1.8,-2.7 -1.8,-5.4c0,-2.7 0,-4.5 0,-5.4ZM532,152c2.7,-2.7 5.4,-2.7 8.1,-2.7c2.7,0 3.6,2.7 4.5,5.4c0.9,2.7 1.8,5.4 1.8,7.2c0,1.8 -0.9,3.6 -2.7,5.4c-1.8,1.8 -3.6,2.7 -6.3,2.7c-2.7,0 -4.5,-1.8 -5.4,-4.5c-0.9,-2.7 -1.8,-3.6 -1.8,-6.3c0,-2.7 0,-4.5 1.8,-7.2ZM620,192c3.6,-1.8 7.2,-1.8 9.9,-0.9c2.7,0.9 4.5,3.6 5.4,6.3c0.9,2.7 0.9,5.4 0,8.1c-0.9,2.7 -2.7,4.5 -5.4,5.4c-2.7,0.9 -5.4,0.9 -8.1,-0.9c-2.7,-1.8 -4.5,-3.6 -5.4,-6.3c-0.9,-2.7 -0.9,-5.4 0.9,-8.1c1.8,-2.7 1.8,-3.6 2.7,-3.6Z" /></svg>
+                            {/* Pulsing Dots */}
+                            <div className="absolute top-[40%] left-[55%] w-3 h-3 bg-brand-500 rounded-full animate-ping" title="Riyadh"></div>
+                            <div className="absolute top-[40%] left-[55%] w-2 h-2 bg-brand-400 rounded-full"></div>
+                            
+                            <div className="absolute top-[35%] left-[52%] w-2 h-2 bg-blue-500 rounded-full animate-ping" style={{animationDelay: '0.5s'}} title="Cairo"></div>
+                            <div className="absolute top-[38%] left-[58%] w-2 h-2 bg-green-500 rounded-full animate-ping" style={{animationDelay: '1s'}} title="Dubai"></div>
+                            <div className="absolute top-[32%] left-[48%] w-2 h-2 bg-orange-500 rounded-full animate-ping" style={{animationDelay: '1.5s'}} title="Istanbul"></div>
+                        </div>
+                        <div className="flex justify-between text-xs text-stone-400 mt-4">
+                            <span>Active Regions: Middle East, North Africa</span>
+                            <span>Server Status: <span className="text-green-400">Online</span></span>
+                        </div>
+                    </div>
+
+                    {/* Sales Charts */}
+                    <div className="bg-stone-50 rounded-2xl p-6 border border-stone-200">
+                        <h3 className="font-bold text-lg mb-6 text-stone-800 flex items-center gap-2"><PieChart size={20} className="text-stone-400"/> {t.sales_distribution}</h3>
+                        <div className="flex items-end justify-between h-40 gap-2 mb-4 px-2">
+                            {/* CSS Bar Chart */}
+                            <div className="w-full bg-brand-200 rounded-t-lg relative group h-[70%]" title="Bakeries"><div className="absolute -top-6 w-full text-center text-xs font-bold text-brand-600">70%</div></div>
+                            <div className="w-full bg-blue-200 rounded-t-lg relative group h-[20%]" title="Household"><div className="absolute -top-6 w-full text-center text-xs font-bold text-blue-600">20%</div></div>
+                            <div className="w-full bg-orange-200 rounded-t-lg relative group h-[10%]" title="Export"><div className="absolute -top-6 w-full text-center text-xs font-bold text-orange-600">10%</div></div>
+                        </div>
+                        <div className="flex justify-between text-xs font-bold text-stone-500 uppercase text-center">
+                            <span className="w-full">Bakeries</span>
+                            <span className="w-full">Home</span>
+                            <span className="w-full">Export</span>
+                        </div>
+                        <div className="mt-6 pt-6 border-t border-stone-200">
+                            <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">{t.top_selling}</h4>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center text-sm font-bold"><span className="text-stone-700">Ras Al-Thawr (25kg)</span><span className="text-brand-600">120k SAR</span></div>
+                                <div className="w-full bg-stone-200 h-1.5 rounded-full"><div className="bg-brand-500 h-1.5 rounded-full w-[80%]"></div></div>
+                                <div className="flex justify-between items-center text-sm font-bold"><span className="text-stone-700">Al-Jawhara (25kg)</span><span className="text-brand-600">85k SAR</span></div>
+                                <div className="w-full bg-stone-200 h-1.5 rounded-full"><div className="bg-brand-500 h-1.5 rounded-full w-[60%]"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          )}
+
+          {/* Generic List (Products, News, Events, Jobs) */}
+          {['products', 'news', 'events', 'jobs'].includes(tab) && (
+            <div className="animate-in fade-in">
+                {viewingApplicationsForJobId ? (
+                    <div>
+                        <div className="flex items-center gap-3 mb-6">
+                            <button onClick={() => setViewingApplicationsForJobId(null)} className="p-2 hover:bg-stone-100 rounded-lg text-stone-500"><ChevronLeft size={24} className="rtl:rotate-180"/></button>
+                            <h2 className="text-2xl font-bold text-stone-800">{t.view_applications}: <span className="text-brand-600">{jobs.find(j => j.id === viewingApplicationsForJobId)?.title_en}</span></h2>
+                        </div>
+                        {currentJobApplications.length === 0 ? (
+                            <div className="text-center py-20 bg-stone-50 rounded-xl border border-stone-100">
+                                <FileText size={48} className="mx-auto text-stone-300 mb-4"/>
+                                <p className="text-stone-500 font-medium">{t.no_applications}</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto rounded-xl border border-stone-200">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-stone-50 text-stone-500 text-xs font-bold uppercase tracking-wider">
+                                        <tr><th className="p-4">{t.applicant_name}</th><th className="p-4">{t.email}</th><th className="p-4">{t.application_date}</th><th className="p-4 text-end">{t.actions}</th></tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-stone-100 text-sm">
+                                        {currentJobApplications.map(app => (
+                                            <tr key={app.id} className={`transition ${app.downloaded ? 'bg-stone-50/50' : 'hover:bg-stone-50'}`}>
+                                                <td className="p-4 font-bold text-stone-700 flex items-center gap-2">
+                                                    {app.applicantName}
+                                                    {app.downloaded && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-normal border border-green-200 flex items-center gap-1"><CheckCircle size={10}/> {t.cv_downloaded_badge}</span>}
+                                                </td>
+                                                <td className="p-4 text-stone-600">{app.applicantEmail}</td>
+                                                <td className="p-4 text-stone-500">{app.date}</td>
+                                                <td className="p-4 text-end">
+                                                    <button onClick={() => handleDownloadCV(app)} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition border ${app.downloaded ? 'bg-white border-stone-200 text-stone-500' : 'bg-brand-50 border-brand-100 text-brand-700 hover:bg-brand-100'}`}>
+                                                        <Download size={14}/> {t.download_cv}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <>
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-stone-800 capitalize">{tab} Management</h2>
+                        <button onClick={handleAdd} className="bg-stone-900 text-white px-4 py-2 rounded-lg hover:bg-brand-600 transition flex items-center gap-2 text-sm font-bold"><Plus size={16}/> {t.add_new}</button>
+                    </div>
+                    <div className="overflow-x-auto rounded-xl border border-stone-200">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-stone-50 text-stone-500 text-xs font-bold uppercase tracking-wider">
+                                <tr><th className="p-4">ID</th><th className="p-4">Title/Name</th><th className="p-4">Status</th><th className="p-4 text-end">{t.actions}</th></tr>
+                            </thead>
+                            <tbody className="divide-y divide-stone-100 text-sm">
+                                {(tab === 'products' ? products : tab === 'news' ? news : tab === 'events' ? events : jobs).map((item: any) => (
+                                    <tr key={item.id} className="hover:bg-stone-50/50 transition">
+                                        <td className="p-4 font-mono text-stone-400">#{item.id}</td>
+                                        <td className="p-4 font-bold text-stone-700 flex items-center gap-3">
+                                            {item.imageUrl && <img src={item.imageUrl} className="w-8 h-8 rounded object-cover border border-stone-200" alt="" />}
+                                            {lang === 'ar' ? (item.name_ar || item.title_ar) : (item.name_en || item.title_en)}
+                                        </td>
+                                        <td className="p-4"><span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">{t.active}</span></td>
+                                        <td className="p-4 text-end flex justify-end gap-2">
+                                            {tab === 'jobs' && (
+                                                <button onClick={() => setViewingApplicationsForJobId(item.id)} className="px-3 py-1.5 bg-stone-100 hover:bg-brand-100 text-stone-600 hover:text-brand-700 rounded-lg text-xs font-bold transition flex items-center gap-1 relative">
+                                                    <FileText size={14}/> {t.view_applications}
+                                                    {jobApplications.filter(app => app.jobId === item.id && !app.downloaded).length > 0 && (
+                                                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>
+                                                    )}
+                                                </button>
+                                            )}
+                                            <button onClick={() => handleEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"><Edit size={16}/></button>
+                                            <button onClick={() => handleDelete(item.id, (tab === 'products' ? products : tab === 'news' ? news : tab === 'events' ? events : jobs), (tab === 'products' ? setProducts : tab === 'news' ? setNews : tab === 'events' ? setEvents : setJobs))} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 size={16}/></button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    </>
+                )}
+            </div>
+          )}
+
+          {/* Users Management */}
+          {tab === 'users' && (
+            <div className="animate-in fade-in">
+                <h2 className="text-2xl font-bold text-stone-800 mb-6">{t.users_manage}</h2>
+                <div className="overflow-x-auto rounded-xl border border-stone-200">
+                    <table className="w-full text-left">
+                        <thead className="bg-stone-50 text-stone-500 text-xs font-bold uppercase tracking-wider">
+                            <tr><th className="p-4">{t.name}</th><th className="p-4">{t.email}</th><th className="p-4">{t.role}</th><th className="p-4">{t.status}</th><th className="p-4">{t.join_date}</th><th className="p-4 text-end">{t.actions}</th></tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100 text-sm">
+                            {usersList.map(u => (
+                                <tr key={u.id} className="hover:bg-stone-50/50">
+                                    <td className="p-4 font-bold text-stone-800">{u.name}</td>
+                                    <td className="p-4 text-stone-600">{u.email}</td>
+                                    <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-stone-100 text-stone-600'}`}>{u.role}</span></td>
+                                    <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold ${u.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{u.status === 'active' ? t.active : t.banned}</span></td>
+                                    <td className="p-4 text-stone-500">{u.joinDate}</td>
+                                    <td className="p-4 text-end flex justify-end gap-2">
+                                        <button onClick={() => setViewingUser(u)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title={t.history}><History size={16}/></button>
+                                        {u.role !== 'admin' && (
+                                            <button onClick={() => toggleUserBan(u.id)} className={`p-2 rounded-lg ${u.status === 'active' ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`} title={u.status === 'active' ? t.ban : t.unban}>
+                                                <Ban size={16}/>
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+          )}
+
+          {/* Page Settings */}
+          {tab === 'pages' && (
+            <div className="animate-in fade-in">
+                 <h2 className="text-2xl font-bold text-stone-800 mb-6">{t.pages_manage}</h2>
+                 <div className="bg-stone-50 rounded-xl border border-stone-200 p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {Object.entries(pageSettings).map(([page, isVisible]) => (
+                            <div key={page} className="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-lg ${isVisible ? 'bg-green-100 text-green-600' : 'bg-stone-100 text-stone-400'}`}><FileBox size={20}/></div>
+                                    <span className="font-bold text-stone-700 capitalize">{page} Page</span>
+                                </div>
+                                <button onClick={() => togglePageVisibility(page)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isVisible ? 'bg-brand-600' : 'bg-stone-300'}`}>
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${isVisible ? 'translate-x-6' : 'translate-x-1'}`}/>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                 </div>
+            </div>
+          )}
+
+          {/* Messages */}
+          {tab === 'messages' && (
+             <div className="animate-in fade-in">
+                <h2 className="text-2xl font-bold text-stone-800 mb-6">{t.messages_manage}</h2>
+                <div className="space-y-4">
+                    {messages.map(msg => (
+                        <div key={msg.id} className={`p-6 rounded-xl border ${msg.status === 'new' ? 'bg-blue-50 border-blue-100' : 'bg-white border-stone-200'} transition`}>
+                            <div className="flex justify-between items-start mb-2">
+                                <div><h4 className="font-bold text-stone-900">{msg.name}</h4><span className="text-xs text-stone-500">{msg.email}</span></div>
+                                <span className="text-xs font-bold text-stone-400">{msg.date}</span>
+                            </div>
+                            <p className="text-stone-700 text-sm mb-4 bg-white/50 p-3 rounded-lg border border-stone-100/50">{msg.message}</p>
+                            <div className="flex gap-2">
+                                <a href={`mailto:${msg.email}`} className="bg-stone-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-stone-700 flex items-center gap-2"><Send size={12}/> Reply</a>
+                                {msg.status === 'new' && <button onClick={() => { setMessages(messages.map(m => m.id === msg.id ? {...m, status: 'read'} : m)); showToast(t.saved_success); }} className="text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded-lg text-xs font-bold border border-brand-200">Mark as Read</button>}
+                            </div>
+                        </div>
+                    ))}
+                    {messages.length === 0 && <div className="text-center py-12 text-stone-400">No messages found</div>}
+                </div>
+             </div>
+          )}
+
         </div>
       </div>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? `${t.edit} ${tab}` : `${t.add_new} ${tab}`}><form onSubmit={handleSave} className="space-y-4"><div><label>Name (AR)</label><input name="name_ar" value={formData.name_ar || ''} onChange={handleChange} className="w-full border p-2 rounded"/></div><div><label>Name (EN)</label><input name="name_en" value={formData.name_en || ''} onChange={handleChange} className="w-full border p-2 rounded"/></div><div><label>Price</label><input type="number" name="price" value={formData.price || ''} onChange={handleChange} className="w-full border p-2 rounded"/></div><button className="w-full bg-brand-600 text-white p-3 rounded">{t.save}</button></form></Modal>
+
+      {/* Edit/Add Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? `${t.edit} ${tab}` : `${t.add_new} ${tab}`}>
+        <form onSubmit={handleSave} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className="text-xs font-bold text-stone-500 uppercase">Title (AR)</label><input name={tab === 'products' ? 'name_ar' : 'title_ar'} value={formData.name_ar || formData.title_ar || ''} onChange={handleChange} className="w-full border border-stone-300 p-2.5 rounded-lg mt-1 outline-none focus:ring-2 focus:ring-brand-500"/></div>
+                <div><label className="text-xs font-bold text-stone-500 uppercase">Title (EN)</label><input name={tab === 'products' ? 'name_en' : 'title_en'} value={formData.name_en || formData.title_en || ''} onChange={handleChange} className="w-full border border-stone-300 p-2.5 rounded-lg mt-1 outline-none focus:ring-2 focus:ring-brand-500"/></div>
+            </div>
+            {tab === 'products' && (
+                <div className="grid grid-cols-2 gap-4">
+                    <div><label className="text-xs font-bold text-stone-500 uppercase">Price</label><input type="number" name="price" value={formData.price || ''} onChange={handleChange} className="w-full border border-stone-300 p-2.5 rounded-lg mt-1 outline-none focus:ring-2 focus:ring-brand-500"/></div>
+                    <div><label className="text-xs font-bold text-stone-500 uppercase">Weight</label><input type="text" name="weight" value={formData.weight || ''} onChange={handleChange} className="w-full border border-stone-300 p-2.5 rounded-lg mt-1 outline-none focus:ring-2 focus:ring-brand-500"/></div>
+                </div>
+            )}
+            <div>
+                <label className="text-xs font-bold text-stone-500 uppercase">Image</label>
+                <div className="mt-1 flex items-center gap-4">
+                    {formData.imageUrl && <img src={formData.imageUrl} className="w-16 h-16 rounded-lg object-cover border border-stone-200" alt="Preview"/>}
+                    <div className="flex-1 border-2 border-dashed border-stone-300 rounded-lg p-4 text-center hover:bg-stone-50 cursor-pointer relative">
+                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageUpload} accept="image/*" />
+                        <span className="text-xs text-stone-500 flex items-center justify-center gap-1"><Upload size={14}/> Upload Image</span>
+                    </div>
+                </div>
+                <div className="mt-2 text-center text-xs text-stone-400 font-bold uppercase">- {t.or_url} -</div>
+                <input type="text" name="imageUrl" placeholder="https://example.com/image.jpg" value={formData.imageUrl || ''} onChange={handleChange} className="w-full border border-stone-300 p-2.5 rounded-lg mt-2 text-sm"/>
+            </div>
+            <button className="w-full bg-stone-900 text-white py-3 rounded-lg font-bold hover:bg-brand-600 transition shadow-lg">{t.save}</button>
+        </form>
+      </Modal>
+
+      {/* User History Modal */}
+      <Modal isOpen={!!viewingUser} onClose={() => setViewingUser(null)} title={`${t.history}: ${viewingUser?.name}`}>
+        <div className="space-y-4">
+            <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 flex justify-between">
+                <div><p className="text-xs font-bold text-stone-500">Email</p><p className="font-bold">{viewingUser?.email}</p></div>
+                <div><p className="text-xs font-bold text-stone-500">Phone</p><p className="font-bold dir-ltr">{viewingUser?.phone}</p></div>
+                <div><p className="text-xs font-bold text-stone-500">Join Date</p><p className="font-bold">{viewingUser?.joinDate}</p></div>
+            </div>
+            <h4 className="font-bold text-stone-800 border-b pb-2">Orders</h4>
+            {viewingUser?.ordersCount === 0 ? <p className="text-stone-400 italic text-center py-4">{t.no_orders}</p> : (
+                <div className="space-y-2">
+                    <div className="p-3 border rounded-lg flex justify-between items-center bg-white"><span className="font-mono text-stone-500">#ORD-001</span><span className="text-sm font-bold">120.00 SAR</span><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Completed</span></div>
+                    <div className="p-3 border rounded-lg flex justify-between items-center bg-white"><span className="font-mono text-stone-500">#ORD-005</span><span className="text-sm font-bold">450.00 SAR</span><span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">Processing</span></div>
+                </div>
+            )}
+        </div>
+      </Modal>
     </div>
   );
 };
@@ -1060,6 +1708,14 @@ const App = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [jobs, setJobs] = useState<JobItem[]>([]);
+  const [usersList, setUsersList] = useState<UserProfile[]>([]);
+  const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [pageSettings, setPageSettings] = useState<PageSettings>({});
+  
+  // New State for Job Applications & Notifications
+  const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => { document.documentElement.lang = lang; document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; }, [lang]);
@@ -1070,10 +1726,30 @@ const App = () => {
       const storedNews = localStorage.getItem('afm_news');
       const storedEvents = localStorage.getItem('afm_events');
       const storedJobs = localStorage.getItem('afm_jobs');
-      if (storedProducts) setProducts(JSON.parse(storedProducts)); else setProducts(await FirebaseService.getProducts());
+      const storedUsers = localStorage.getItem('afm_users');
+      const storedMessages = localStorage.getItem('afm_messages');
+      const storedSettings = localStorage.getItem('afm_settings');
+      const storedApplications = localStorage.getItem('afm_applications');
+      const storedNotifications = localStorage.getItem('afm_notifications');
+
+      if (storedProducts) {
+          const parsedProducts = JSON.parse(storedProducts);
+          parsedProducts.forEach((p: any) => { if(p.price) p.price = Number(p.price); });
+          setProducts(parsedProducts);
+      } else {
+          setProducts(await FirebaseService.getProducts());
+      }
+
       if (storedNews) setNews(JSON.parse(storedNews)); else setNews(await FirebaseService.getNews());
       if (storedEvents) setEvents(JSON.parse(storedEvents)); else setEvents(await FirebaseService.getEvents());
       if (storedJobs) setJobs(JSON.parse(storedJobs)); else setJobs(await FirebaseService.getJobs());
+      
+      if (storedUsers) setUsersList(JSON.parse(storedUsers)); else setUsersList(INITIAL_USERS);
+      if (storedMessages) setMessages(JSON.parse(storedMessages)); else setMessages(INITIAL_MESSAGES);
+      if (storedSettings) setPageSettings(JSON.parse(storedSettings)); else setPageSettings(INITIAL_PAGE_SETTINGS);
+      if (storedApplications) setJobApplications(JSON.parse(storedApplications));
+      if (storedNotifications) setNotifications(JSON.parse(storedNotifications));
+
       setIsLoaded(true);
     };
     loadData();
@@ -1083,6 +1759,11 @@ const App = () => {
   useEffect(() => { if (isLoaded) localStorage.setItem('afm_news', JSON.stringify(news)); }, [news, isLoaded]);
   useEffect(() => { if (isLoaded) localStorage.setItem('afm_events', JSON.stringify(events)); }, [events, isLoaded]);
   useEffect(() => { if (isLoaded) localStorage.setItem('afm_jobs', JSON.stringify(jobs)); }, [jobs, isLoaded]);
+  useEffect(() => { if (isLoaded) localStorage.setItem('afm_users', JSON.stringify(usersList)); }, [usersList, isLoaded]);
+  useEffect(() => { if (isLoaded) localStorage.setItem('afm_messages', JSON.stringify(messages)); }, [messages, isLoaded]);
+  useEffect(() => { if (isLoaded) localStorage.setItem('afm_settings', JSON.stringify(pageSettings)); }, [pageSettings, isLoaded]);
+  useEffect(() => { if (isLoaded) localStorage.setItem('afm_applications', JSON.stringify(jobApplications)); }, [jobApplications, isLoaded]);
+  useEffect(() => { if (isLoaded) localStorage.setItem('afm_notifications', JSON.stringify(notifications)); }, [notifications, isLoaded]);
 
   const addToCart = (p: Product, quantity: number = 1) => { setCart(prev => { const existing = prev.find(item => item.id === p.id); if (existing) { return prev.map(item => item.id === p.id ? { ...item, quantity: item.quantity + quantity } : item); } return [...prev, { ...p, quantity }]; }); alert(lang === 'ar' ? 'تمت الإضافة للسلة' : 'Added to cart'); };
   const updateQuantity = (id: string, delta: number) => { setCart(prev => prev.map(item => { if (item.id === id) { const newQty = Math.max(1, item.quantity + delta); return { ...item, quantity: newQty }; } return item; })); };
@@ -1090,6 +1771,12 @@ const App = () => {
   const clearCart = () => setCart([]);
   const login = (role: string) => { setUser({ name: 'Admin User', role, email: 'mohemadmuzamil@gmail.com' }); setView('admin'); };
   const logout = () => { setUser(null); setView('home'); };
+  
+  const addJobApplication = (app: JobApplication) => { setJobApplications(prev => [...prev, app]); };
+  const markCVDownloaded = (appId: string) => { setJobApplications(prev => prev.map(app => app.id === appId ? { ...app, downloaded: true } : app)); };
+  
+  const addNotification = (note: NotificationItem) => { setNotifications(prev => [note, ...prev]); };
+  const clearNotifications = () => { setNotifications([]); };
 
   const setTheme = (themeName: ThemeName) => {
     const theme = THEMES[themeName];
@@ -1099,7 +1786,13 @@ const App = () => {
     });
   };
 
-  const contextValue = { lang, setLang, view, setView, cart, addToCart, updateQuantity, removeFromCart, clearCart, user, login, logout, products, setProducts, news, setNews, events, setEvents, jobs, setJobs, setTheme };
+  const contextValue = { 
+    lang, setLang, view, setView, cart, addToCart, updateQuantity, removeFromCart, clearCart, user, login, logout, 
+    products, setProducts, news, setNews, events, setEvents, jobs, setJobs, setTheme,
+    usersList, setUsersList, messages, setMessages, pageSettings, setPageSettings,
+    jobApplications, addJobApplication, markCVDownloaded,
+    notifications, addNotification, clearNotifications
+  };
 
   return (
     <AppContext.Provider value={contextValue}>
@@ -1107,15 +1800,49 @@ const App = () => {
         <Header />
         <main className="flex-1">
           {view === 'home' && (<><Hero /><StatsSection /><ProductList /><div className="bg-stone-50 py-20 border-t border-stone-100"><div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-12 text-center"><div className="p-8 bg-white rounded-2xl shadow-sm border border-stone-100 hover:-translate-y-2 transition duration-300"><div className="bg-brand-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-brand-600 shadow-inner"><CheckCircle size={40}/></div><h3 className="text-xl font-bold mb-3 text-stone-800">{lang === 'ar' ? 'جودة مضمونة' : 'Quality Guaranteed'}</h3><p className="text-stone-500 leading-relaxed">{lang === 'ar' ? 'نستخدم أفضل أنواع القمح لضمان جودة منتجاتنا وفق أعلى المعايير.' : 'We use the best wheat types to ensure product quality per highest standards.'}</p></div><div className="p-8 bg-white rounded-2xl shadow-sm border border-stone-100 hover:-translate-y-2 transition duration-300"><div className="bg-brand-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-brand-600 shadow-inner"><MapPin size={40}/></div><h3 className="text-xl font-bold mb-3 text-stone-800">{lang === 'ar' ? 'تغطية واسعة' : 'Wide Coverage'}</h3><p className="text-stone-500 leading-relaxed">{lang === 'ar' ? 'أسطول توزيع متكامل يغطي جميع أنحاء المملكة لضمان الوصول السريع.' : 'Integrated distribution fleet covering the kingdom for fast delivery.'}</p></div><div className="p-8 bg-white rounded-2xl shadow-sm border border-stone-100 hover:-translate-y-2 transition duration-300"><div className="bg-brand-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-brand-600 shadow-inner"><Phone size={40}/></div><h3 className="text-xl font-bold mb-3 text-stone-800">{lang === 'ar' ? 'دعم مستمر' : '24/7 Support'}</h3><p className="text-stone-500 leading-relaxed">{lang === 'ar' ? 'فريق خدمة العملاء جاهز لخدمتكم والإجابة على استفساراتكم.' : 'Customer service team ready to serve you and answer your queries.'}</p></div></div></div></>)}
-          {view === 'products' && <ProductList />}
-          {view === 'news' && <NewsView />}
-          {view === 'events' && <EventsView />}
-          {view === 'careers' && <CareersView />}
+          {view === 'products' && pageSettings.products !== false && <ProductList />}
+          {view === 'news' && pageSettings.news !== false && <NewsView />}
+          {view === 'events' && pageSettings.events !== false && <EventsView />}
+          {view === 'careers' && pageSettings.careers !== false && <CareersView />}
+          {view === 'about' && pageSettings.about !== false && (<div className="container mx-auto px-4 py-16 max-w-4xl"><div className="bg-white p-10 rounded-2xl shadow-lg border border-stone-100"><div className="flex items-center gap-4 mb-8 pb-8 border-b border-stone-100"><div className="bg-brand-600 text-white p-4 rounded-2xl shadow-lg shadow-brand-600/30"><Wheat size={48}/></div><div><h2 className="text-4xl font-bold text-stone-900">{TRANSLATIONS[lang].nav_about}</h2><span className="text-brand-600 font-bold tracking-widest uppercase text-sm">Since 1985</span></div></div><div className="prose max-w-none text-stone-600 leading-loose text-lg"><p className="mb-6 font-medium text-stone-800">{TRANSLATIONS[lang].footer_desc}</p><p>{lang === 'ar' ? 'تأسست مطاحن الشفاء برؤية تهدف إلى تعزيز الأمن الغذائي وتقديم منتجات عالية الجودة. نحن نستخدم أحدث التقنيات الألمانية في الطحن والغربلة لضمان استخراج أنقى أنواع الدقيق.' : 'Al-Shifa Mills was founded with a vision to enhance food security and provide high-quality products. We use the latest German technology in milling and sifting to ensure the extraction of the purest flour.'}</p><div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8"><div className="bg-stone-50 p-6 rounded-xl border border-stone-200"><h4 className="font-bold text-stone-900 mb-2">{lang === 'ar' ? 'رؤيتنا' : 'Our Vision'}</h4><p className="text-sm">To be the leading provider of grain products in the Middle East.</p></div><div className="bg-stone-50 p-6 rounded-xl border border-stone-200"><h4 className="font-bold text-stone-900 mb-2">{lang === 'ar' ? 'رسالتنا' : 'Our Mission'}</h4><p className="text-sm">Delivering healthy, high-quality nutrition to every home.</p></div></div></div></div></div>)}
+          
           {view === 'cart' && <CartView />}
           {view === 'login' && <Login />}
           {view === 'admin' && (user ? <AdminPanel /> : <Login />)}
-          {view === 'contact' && (<div className="container mx-auto px-4 py-16"><div className="max-w-3xl mx-auto bg-white p-10 rounded-2xl shadow-xl border border-stone-100"><div className="text-center mb-10"><div className="bg-brand-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-600"><Mail size={32}/></div><h2 className="text-3xl font-bold text-stone-800">{TRANSLATIONS[lang].contact_us_title}</h2><p className="text-stone-500 mt-2">We'd love to hear from you</p></div><form className="space-y-6"><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div><label className="block text-sm font-bold text-stone-600 mb-2">{TRANSLATIONS[lang].name}</label><input type="text" className="w-full border border-stone-300 p-3.5 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition" /></div><div><label className="block text-sm font-bold text-stone-600 mb-2">{TRANSLATIONS[lang].email}</label><input type="email" className="w-full border border-stone-300 p-3.5 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition" /></div></div><div><label className="block text-sm font-bold text-stone-600 mb-2">{TRANSLATIONS[lang].message}</label><textarea rows={5} className="w-full border border-stone-300 p-3.5 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition"></textarea></div><button className="w-full bg-stone-900 text-white py-4 rounded-xl font-bold hover:bg-brand-600 transition shadow-lg">{TRANSLATIONS[lang].send}</button></form></div></div>)}
-          {view === 'about' && (<div className="container mx-auto px-4 py-16 max-w-4xl"><div className="bg-white p-10 rounded-2xl shadow-lg border border-stone-100"><div className="flex items-center gap-4 mb-8 pb-8 border-b border-stone-100"><div className="bg-brand-600 text-white p-4 rounded-2xl shadow-lg shadow-brand-600/30"><Wheat size={48}/></div><div><h2 className="text-4xl font-bold text-stone-900">{TRANSLATIONS[lang].nav_about}</h2><span className="text-brand-600 font-bold tracking-widest uppercase text-sm">Since 1985</span></div></div><div className="prose max-w-none text-stone-600 leading-loose text-lg"><p className="mb-6 font-medium text-stone-800">{TRANSLATIONS[lang].footer_desc}</p><p>{lang === 'ar' ? 'تأسست مطاحن الشفاء برؤية تهدف إلى تعزيز الأمن الغذائي وتقديم منتجات عالية الجودة. نحن نستخدم أحدث التقنيات الألمانية في الطحن والغربلة لضمان استخراج أنقى أنواع الدقيق.' : 'Al-Shifa Mills was founded with a vision to enhance food security and provide high-quality products. We use the latest German technology in milling and sifting to ensure the extraction of the purest flour.'}</p><div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8"><div className="bg-stone-50 p-6 rounded-xl border border-stone-200"><h4 className="font-bold text-stone-900 mb-2">{lang === 'ar' ? 'رؤيتنا' : 'Our Vision'}</h4><p className="text-sm">To be the leading provider of grain products in the Middle East.</p></div><div className="bg-stone-50 p-6 rounded-xl border border-stone-200"><h4 className="font-bold text-stone-900 mb-2">{lang === 'ar' ? 'رسالتنا' : 'Our Mission'}</h4><p className="text-sm">Delivering healthy, high-quality nutrition to every home.</p></div></div></div></div></div>)}
+          {view === 'contact' && pageSettings.contact !== false && (
+             <div className="container mx-auto px-4 py-16">
+                 <div className="max-w-3xl mx-auto bg-white p-10 rounded-2xl shadow-xl border border-stone-100">
+                     <div className="text-center mb-10">
+                         <div className="bg-brand-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-600"><Mail size={32}/></div>
+                         <h2 className="text-3xl font-bold text-stone-800">{TRANSLATIONS[lang].contact_us_title}</h2>
+                         <p className="text-stone-500 mt-2">We'd love to hear from you</p>
+                     </div>
+                     <form className="space-y-6" onSubmit={(e) => {
+                         e.preventDefault(); 
+                         const form = e.target as HTMLFormElement;
+                         const formData = new FormData(form);
+                         const newMsg = {
+                             id: Math.random().toString(36).substr(2, 9),
+                             name: formData.get('name') as string,
+                             email: formData.get('email') as string,
+                             message: formData.get('message') as string,
+                             date: new Date().toISOString().split('T')[0],
+                             status: 'new' as const
+                         };
+                         setMessages([...messages, newMsg]);
+                         alert(lang === 'ar' ? 'تم الإرسال بنجاح' : 'Sent Successfully');
+                         form.reset();
+                     }}>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div><label className="block text-sm font-bold text-stone-600 mb-2">{TRANSLATIONS[lang].name}</label><input name="name" required type="text" className="w-full border border-stone-300 p-3.5 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition" /></div>
+                             <div><label className="block text-sm font-bold text-stone-600 mb-2">{TRANSLATIONS[lang].email}</label><input name="email" required type="email" className="w-full border border-stone-300 p-3.5 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition" /></div>
+                         </div>
+                         <div><label className="block text-sm font-bold text-stone-600 mb-2">{TRANSLATIONS[lang].message}</label><textarea name="message" required rows={5} className="w-full border border-stone-300 p-3.5 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition"></textarea></div>
+                         <button className="w-full bg-stone-900 text-white py-4 rounded-xl font-bold hover:bg-brand-600 transition shadow-lg">{TRANSLATIONS[lang].send}</button>
+                     </form>
+                 </div>
+             </div>
+          )}
         </main>
         <Footer />
       </div>
