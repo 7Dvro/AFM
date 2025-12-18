@@ -1,4 +1,5 @@
-import React, { useState, useEffect, createContext, useContext, useRef } from 'react';
+
+import React, { useState, useEffect, createContext, useContext, useRef, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import { 
   Menu, X, Globe, ShoppingCart, User, Wheat, MapPin, Phone, Mail, 
@@ -6,7 +7,7 @@ import {
   Facebook, Twitter, Instagram, Linkedin, Factory, Truck, Award,
   Calendar, Briefcase, FileText, Upload, Clock, ArrowRight, Save, Image as ImageIcon,
   LayoutDashboard, LogOut, Bell, Lock, ShieldCheck, Package, Star, Info, Leaf, DollarSign,
-  Eye, EyeOff, LogIn, MessageCircle, Send, Video, Palette, Ban, History, FileBox, Settings, ToggleLeft, ToggleRight, Users, Download, ChevronDown, Activity, Map, PieChart, TrendingUp, AlertCircle
+  Eye, EyeOff, LogIn, MessageCircle, Send, Video, Palette, Ban, History, FileBox, Settings, ToggleLeft, ToggleRight, Users, Download, ChevronDown, Activity, Map, PieChart, TrendingUp, AlertCircle, Share2, Bookmark, UserCircle, Link as LinkIcon, Check
 } from 'lucide-react';
 
 // --- TYPES & INTERFACES ---
@@ -31,6 +32,17 @@ interface CartItem extends Product {
   quantity: number;
 }
 
+interface Order {
+    id: string;
+    items: CartItem[];
+    total: number;
+    customerName: string;
+    customerEmail: string;
+    date: string;
+    status: 'pending' | 'completed';
+    location: string; // For map visualization
+}
+
 interface NewsItem {
   id: string;
   title_ar: string;
@@ -38,6 +50,9 @@ interface NewsItem {
   date: string;
   summary_ar: string;
   summary_en: string;
+  content_ar: string; 
+  content_en: string; 
+  author: string;     
   imageUrl: string;
 }
 
@@ -74,10 +89,10 @@ interface JobApplication {
   jobTitle: string;
   applicantName: string;
   applicantEmail: string;
-  cvUrl: string; // Base64 string for demo
+  cvUrl: string; 
   date: string;
   status: 'new' | 'reviewed';
-  downloaded: boolean; // Track if CV was downloaded
+  downloaded: boolean;
 }
 
 interface UserProfile {
@@ -89,6 +104,8 @@ interface UserProfile {
     joinDate: string;
     ordersCount: number;
     phone: string;
+    savedNewsIds: string[];
+    savedEventIds: string[];
 }
 
 interface MessageItem {
@@ -208,6 +225,9 @@ const INITIAL_NEWS: NewsItem[] = [
     date: '2023-11-15',
     summary_ar: 'احتفلت مطاحن الشفاء اليوم بتدشين التوسعة الجديدة للمصنع...',
     summary_en: 'Al-Shifa Mills celebrated today the launch of the new factory expansion...',
+    content_ar: 'احتفلت مطاحن الشفاء اليوم بتدشين التوسعة الجديدة للمصنع والتي ستسهم في رفع الطاقة الإنتاجية بمقدار 500 طن يومياً. يأتي هذا المشروع ضمن خطة الشركة الاستراتيجية لتلبية الطلب المتزايد في السوق المحلي والإقليمي. وقد حضر الحفل عدد من المسؤولين ورجال الأعمال، حيث تم استعراض التقنيات الحديثة المستخدمة في خط الإنتاج الجديد والتي تعتمد على الأتمتة الكاملة لضمان أعلى معايير الجودة والسلامة الغذائية.',
+    content_en: 'Al-Shifa Mills celebrated today the launch of the new factory expansion, which will contribute to increasing production capacity by 500 tons per day. This project comes within the company\'s strategic plan to meet the growing demand in the local and regional market. The ceremony was attended by a number of officials and businessmen, where the modern technologies used in the new production line were reviewed, which rely on full automation to ensure the highest standards of quality and food safety.',
+    author: 'Admin',
     imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=600'
   },
   {
@@ -217,6 +237,9 @@ const INITIAL_NEWS: NewsItem[] = [
     date: '2023-10-01',
     summary_ar: 'تأكيداً على التزامنا بأعلى معايير الجودة وسلامة الغذاء...',
     summary_en: 'Confirming our commitment to the highest quality and food safety standards...',
+    content_ar: 'في إنجاز جديد يضاف لسجل الشركة الحافل، حصلت مطاحن الشفاء على شهادة الأيزو 22000 لنظام إدارة سلامة الغذاء. يعكس هذا الإنجاز التزامنا الصارم بتطبيق المعايير الدولية في جميع مراحل الإنتاج، من استلام الحبوب وحتى تعبئة المنتج النهائي وتوزيعه. نعد عملاءنا بالاستمرار في تقديم منتجات صحية وآمنة وعالية الجودة.',
+    content_en: 'In a new achievement added to the company\'s track record, Al-Shifa Mills received the ISO 22000 certification for Food Safety Management System. This achievement reflects our strict commitment to implementing international standards at all stages of production, from receiving grains to packaging and distributing the final product. We promise our customers to continue providing healthy, safe, and high-quality products.',
+    author: 'Quality Team',
     imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=600'
   }
 ];
@@ -243,6 +266,17 @@ const INITIAL_EVENTS: EventItem[] = [
     description_ar: 'لقاء يجمع شركاء النجاح لاستعراض استراتيجيات العام الجديد.',
     description_en: 'A meeting bringing together success partners to review new year strategies.',
     imageUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=600'
+  },
+  {
+    id: 'e3',
+    title_ar: 'ورشة عمل خبز الدقيق الفاخر',
+    title_en: 'Premium Flour Baking Workshop',
+    date: '2024-03-05',
+    location_ar: 'أكاديمية الشفاء - جدة',
+    location_en: 'Al-Shifa Academy - Jeddah',
+    description_ar: 'انضم إلينا لتعلم أسرار الخبز باستخدام أفضل أنواع الدقيق.',
+    description_en: 'Join us to learn the secrets of baking using the finest flour types.',
+    imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=600'
   }
 ];
 
@@ -278,13 +312,36 @@ const INITIAL_JOBS: JobItem[] = [
 ];
 
 const INITIAL_USERS: UserProfile[] = [
-    { id: 'u1', name: 'Admin User', email: 'mohemadmuzamil@gmail.com', role: 'admin', status: 'active', joinDate: '2023-01-01', ordersCount: 0, phone: '+966500000000' },
-    { id: 'u2', name: 'John Doe', email: 'john@example.com', role: 'user', status: 'active', joinDate: '2024-03-15', ordersCount: 5, phone: '+966511111111' },
-    { id: 'u3', name: 'Jane Smith', email: 'jane@example.com', role: 'user', status: 'banned', joinDate: '2024-04-10', ordersCount: 1, phone: '+966522222222' },
+    { id: 'u1', name: 'Admin User', email: 'mohemadmuzamil@gmail.com', role: 'admin', status: 'active', joinDate: '2023-01-01', ordersCount: 0, phone: '+966500000000', savedNewsIds: [], savedEventIds: [] },
+    { id: 'u2', name: 'John Doe', email: 'john@example.com', role: 'user', status: 'active', joinDate: '2024-03-15', ordersCount: 5, phone: '+966511111111', savedNewsIds: [], savedEventIds: [] },
+    { id: 'u3', name: 'Jane Smith', email: 'jane@example.com', role: 'user', status: 'banned', joinDate: '2024-04-10', ordersCount: 1, phone: '+966522222222', savedNewsIds: [], savedEventIds: [] },
 ];
 
 const INITIAL_MESSAGES: MessageItem[] = [
     { id: 'm1', name: 'Ahmed Ali', email: 'ahmed@test.com', message: 'I need a quote for 50 tons of flour.', date: '2024-05-20', status: 'new' },
+];
+
+const INITIAL_ORDERS: Order[] = [
+    {
+        id: 'ord-123',
+        items: [{...INITIAL_PRODUCTS[0], quantity: 10}],
+        total: 440,
+        customerName: 'Baker One',
+        customerEmail: 'baker@test.com',
+        date: '2024-05-15',
+        status: 'completed',
+        location: 'Riyadh'
+    },
+    {
+        id: 'ord-124',
+        items: [{...INITIAL_PRODUCTS[3], quantity: 5}],
+        total: 250,
+        customerName: 'Home User',
+        customerEmail: 'home@test.com',
+        date: '2024-05-18',
+        status: 'completed',
+        location: 'Jeddah'
+    }
 ];
 
 const INITIAL_PAGE_SETTINGS: PageSettings = {
@@ -540,12 +597,19 @@ const TRANSLATIONS = {
     cv_uploaded: 'تم إرفاق السيرة الذاتية',
     cv_downloaded_badge: 'تم التحميل',
     analytics_report: 'تقرير المبيعات والتحليلات',
-    live_visitors: 'الزوار الآن',
-    live_map: 'خريطة التفاعل المباشر',
+    live_visitors: 'زيارات الصفحة',
+    live_map: 'خريطة الطلبات الحديثة',
     top_selling: 'المنتجات الأكثر مبيعاً',
-    sales_distribution: 'توزيع المبيعات (مخابز/أفراد)',
+    sales_distribution: 'توزيع المبيعات (أفراد/مخابز)',
     notifications: 'الإشعارات',
     no_notifications: 'لا توجد إشعارات جديدة',
+    share: 'مشاركة',
+    search_placeholder: 'ابحث عن أخبار...',
+    search_events_placeholder: 'ابحث عن فعاليات...',
+    search: 'بحث',
+    save_to_profile: 'حفظ في الملف الشخصي',
+    saved_to_profile: 'تم الحفظ في الملف الشخصي',
+    share_success: 'تم نسخ الرابط بنجاح',
     // Auth Translations
     welcome_back: 'مرحباً بعودتك',
     welcome_sub: 'سجل دخولك للمتابعة',
@@ -666,12 +730,19 @@ const TRANSLATIONS = {
     cv_uploaded: 'CV Attached',
     cv_downloaded_badge: 'Downloaded',
     analytics_report: 'Sales & Analytics Report',
-    live_visitors: 'Live Visitors',
-    live_map: 'Live Interactions Map',
+    live_visitors: 'Page Views',
+    live_map: 'Recent Orders Map',
     top_selling: 'Top Selling Products',
     sales_distribution: 'Sales Distribution',
     notifications: 'Notifications',
     no_notifications: 'No new notifications',
+    share: 'Share',
+    search_placeholder: 'Search news...',
+    search_events_placeholder: 'Search events...',
+    search: 'Search',
+    save_to_profile: 'Save to Profile',
+    saved_to_profile: 'Saved to Profile',
+    share_success: 'Link copied to clipboard',
     // Auth Translations
     welcome_back: 'Welcome Back',
     welcome_sub: 'Sign in to continue',
@@ -725,6 +796,13 @@ const AppContext = createContext<{
   notifications: NotificationItem[];
   addNotification: (note: NotificationItem) => void;
   clearNotifications: () => void;
+  // Orders
+  orders: Order[];
+  addOrder: (order: Order) => void;
+  pageViews: number;
+  // User Actions
+  toggleSavedNews: (id: string) => void;
+  toggleSavedEvent: (id: string) => void;
 }>({} as any);
 
 // --- FIREBASE SERVICE (MOCKED) ---
@@ -848,48 +926,370 @@ const Header = () => {
 };
 
 const NewsView = () => {
-  const { lang, news } = useContext(AppContext);
+  const { lang, news, user, toggleSavedNews, setView } = useContext(AppContext);
   const t = TRANSLATIONS[lang];
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const openNews = (item: NewsItem) => setSelectedNews(item);
+  const closeNews = () => setSelectedNews(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  const handleShare = async (item: NewsItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const title = lang === 'ar' ? item.title_ar : item.title_en;
+    const url = window.location.href; // In a real app, this would be a specific slug
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text: lang === 'ar' ? item.summary_ar : item.summary_en, url });
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      navigator.clipboard.writeText(url);
+      showToast(t.share_success);
+    }
+  };
+
+  const handleSave = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+        setView('login');
+        return;
+    }
+    toggleSavedNews(id);
+    const isSaved = user.savedNewsIds?.includes(id);
+    showToast(isSaved ? 'Removed from saved' : t.saved_to_profile);
+  };
+
+  const filteredNews = news.filter(item => {
+    const term = searchTerm.toLowerCase();
+    const title = (lang === 'ar' ? item.title_ar : item.title_en).toLowerCase();
+    const summary = (lang === 'ar' ? item.summary_ar : item.summary_en).toLowerCase();
+    return title.includes(term) || summary.includes(term);
+  });
+
   return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="text-center mb-16"><h3 className="text-4xl font-bold text-stone-900 mt-2">{t.browse_news}</h3><div className="w-24 h-1 bg-brand-500 mx-auto mt-4 rounded-full"></div></div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-        {news.map(item => (
-          <div key={item.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition group">
-            <div className="h-64 overflow-hidden relative"><img src={item.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" /><div className="absolute top-4 right-4 bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded shadow">{item.date}</div></div>
-            <div className="p-8"><h4 className="text-xl font-bold text-stone-900 mb-3">{lang === 'ar' ? item.title_ar : item.title_en}</h4><p className="text-stone-600 mb-6">{lang === 'ar' ? item.summary_ar : item.summary_en}</p><button className="text-brand-600 font-bold flex items-center gap-2 hover:text-brand-700">{t.read_more} {lang === 'ar' ? <ChevronLeft size={16}/> : <ChevronRight size={16}/>}</button></div>
+    <div className="min-h-screen bg-stone-50/50">
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed top-20 right-4 rtl:left-4 rtl:right-auto z-[150] bg-stone-900 text-white px-6 py-3 rounded-xl shadow-2xl animate-in fade-in slide-in-from-top-4 flex items-center gap-3">
+          <Check size={18} className="text-green-500" />
+          <span className="font-bold text-sm">{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Hero Header with Integrated Search */}
+      <div className="bg-stone-900 text-white py-24 relative overflow-visible">
+          <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'url(https://www.transparenttextures.com/patterns/cubes.png)'}}></div>
+          <div className="container mx-auto px-4 relative z-10 text-center">
+              <span className="inline-block py-1 px-3 rounded-full bg-brand-600/20 border border-brand-500/30 text-brand-400 text-xs font-bold uppercase tracking-widest mb-4">Insights & Updates</span>
+              <h1 className="text-4xl md:text-5xl font-black mb-6">{t.browse_news}</h1>
+              <p className="text-stone-400 max-w-2xl mx-auto text-lg mb-12">Stay updated with the latest from Al-Shifa Mills, industry trends, and company announcements.</p>
+              
+              {/* Floating Search Bar */}
+              <div className="max-w-2xl mx-auto relative transform translate-y-8 z-20">
+                <div className="bg-white rounded-full shadow-2xl p-2 flex items-center border border-stone-100">
+                    <div className="pl-4 rtl:pr-4 rtl:pl-0 text-stone-400">
+                        <Search size={24} />
+                    </div>
+                    <input 
+                        type="text" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder={t.search_placeholder}
+                        className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-stone-800 text-lg font-medium placeholder:text-stone-300 w-full"
+                    />
+                    <button className="bg-brand-600 hover:bg-brand-700 text-white px-8 py-3 rounded-full font-bold transition duration-300 shadow-lg shadow-brand-600/20">
+                        {t.search}
+                    </button>
+                </div>
+              </div>
           </div>
-        ))}
       </div>
+
+      <div className="container mx-auto px-4 pt-24 pb-16 relative z-10">
+        {filteredNews.length === 0 ? (
+            <div className="text-center py-20 opacity-50">
+                <Search size={64} className="mx-auto mb-4 text-stone-300"/>
+                <p className="text-xl font-bold text-stone-400">No results found for "{searchTerm}"</p>
+            </div>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredNews.map((item) => {
+                const isSaved = user?.savedNewsIds?.includes(item.id);
+                return (
+                    <div key={item.id} onClick={() => openNews(item)} className="group bg-white rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 cursor-pointer overflow-hidden border border-stone-100 flex flex-col h-full relative">
+                    <div className="relative h-64 overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10 opacity-60 group-hover:opacity-40 transition duration-300"></div>
+                        <img src={item.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" alt={lang === 'ar' ? item.title_ar : item.title_en} />
+                        
+                        {/* Bookmark Button on Card */}
+                        <button 
+                            onClick={(e) => handleSave(item.id, e)}
+                            className={`absolute top-4 left-4 z-30 p-2.5 rounded-full backdrop-blur-md transition-all duration-300 shadow-lg ${isSaved ? 'bg-brand-600 text-white' : 'bg-white/90 text-stone-400 hover:text-brand-600'}`}
+                            title={t.save_to_profile}
+                        >
+                            <Bookmark size={18} fill={isSaved ? "currentColor" : "none"} />
+                        </button>
+
+                        <div className="absolute top-4 right-4 z-20 bg-white/90 backdrop-blur text-stone-900 text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1">
+                            <Calendar size={12} className="text-brand-600"/>
+                            {item.date}
+                        </div>
+                    </div>
+                    <div className="p-6 flex-1 flex flex-col">
+                        <h3 className="text-xl font-bold text-stone-900 mb-3 line-clamp-2 leading-tight group-hover:text-brand-600 transition">{lang === 'ar' ? item.title_ar : item.title_en}</h3>
+                        <p className="text-stone-500 text-sm line-clamp-3 mb-6 flex-1 leading-relaxed">{lang === 'ar' ? item.summary_ar : item.summary_en}</p>
+                        <div className="flex items-center justify-between pt-4 border-t border-stone-100 mt-auto">
+                            <div className="flex items-center gap-2 text-xs font-bold text-stone-400">
+                                <UserCircle size={16}/> {item.author || 'Admin'}
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={(e) => handleShare(item, e)}
+                                    className="text-stone-400 hover:text-brand-600 transition p-1"
+                                    title={t.share}
+                                >
+                                    <Share2 size={18} />
+                                </button>
+                                <span className="text-brand-600 text-sm font-bold flex items-center gap-1 group-hover:underline">
+                                    {t.read_more} {lang === 'ar' ? <ChevronLeft size={16}/> : <ChevronRight size={16}/>}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                );
+            })}
+            </div>
+        )}
+      </div>
+
+      {/* Professional News Modal */}
+      {selectedNews && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" style={{zIndex: 9999}}>
+            <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm transition-opacity duration-300" onClick={closeNews}></div>
+            <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl relative z-10 overflow-y-auto animate-in fade-in zoom-in-95 duration-300 flex flex-col">
+                
+                {/* Close Button */}
+                <button onClick={closeNews} className="absolute top-4 right-4 rtl:left-4 rtl:right-auto z-50 p-2 bg-white/50 backdrop-blur hover:bg-white text-stone-800 rounded-full transition shadow-sm border border-stone-200">
+                    <X size={24}/>
+                </button>
+
+                {/* Article Header Image */}
+                <div className="relative h-64 sm:h-96 flex-shrink-0">
+                    <img src={selectedNews.imageUrl} className="w-full h-full object-cover" alt="" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                    <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                        <div className="flex items-center gap-4 mb-4 text-sm font-medium text-white/80">
+                            <span className="bg-brand-600 text-white px-3 py-1 rounded-full text-xs font-bold">News</span>
+                            <span className="flex items-center gap-1"><Calendar size={14}/> {selectedNews.date}</span>
+                            <span className="flex items-center gap-1"><UserCircle size={14}/> {selectedNews.author || 'Admin'}</span>
+                        </div>
+                        <h2 className="text-3xl sm:text-4xl font-black leading-tight mb-2">{lang === 'ar' ? selectedNews.title_ar : selectedNews.title_en}</h2>
+                    </div>
+                </div>
+
+                {/* Article Content */}
+                <div className="p-8 sm:p-12">
+                    <div className="prose prose-lg max-w-none prose-stone prose-headings:font-bold prose-a:text-brand-600 hover:prose-a:text-brand-500">
+                        {/* Render content paragraphs */}
+                        {(lang === 'ar' ? (selectedNews.content_ar || selectedNews.summary_ar) : (selectedNews.content_en || selectedNews.summary_en))
+                            .split('\n').map((paragraph, idx) => (
+                                <p key={idx} className="mb-4 text-stone-600 leading-loose">{paragraph}</p>
+                        ))}
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="mt-12 pt-8 border-t border-stone-200 flex flex-col sm:flex-row justify-between items-center gap-6">
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm font-bold text-stone-400 uppercase tracking-wider">{t.share}:</span>
+                            <div className="flex gap-2">
+                                <button onClick={(e) => handleShare(selectedNews, e)} className="w-10 h-10 rounded-full bg-stone-100 hover:bg-[#1DA1F2] hover:text-white text-stone-500 flex items-center justify-center transition"><Twitter size={18}/></button>
+                                <button onClick={(e) => handleShare(selectedNews, e)} className="w-10 h-10 rounded-full bg-stone-100 hover:bg-[#4267B2] hover:text-white text-stone-500 flex items-center justify-center transition"><Facebook size={18}/></button>
+                                <button onClick={(e) => handleShare(selectedNews, e)} className="w-10 h-10 rounded-full bg-stone-100 hover:bg-[#0077b5] hover:text-white text-stone-500 flex items-center justify-center transition"><Linkedin size={18}/></button>
+                                <button onClick={(e) => handleShare(selectedNews, e)} className="w-10 h-10 rounded-full bg-stone-100 hover:bg-stone-800 hover:text-white text-stone-500 flex items-center justify-center transition" title="Copy Link"><LinkIcon size={18}/></button>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={(e) => handleSave(selectedNews.id, e)}
+                            className={`flex items-center gap-2 font-bold transition text-sm px-6 py-3 rounded-xl border ${user?.savedNewsIds?.includes(selectedNews.id) ? 'bg-brand-600 text-white border-brand-600' : 'text-stone-500 hover:text-brand-600 border-stone-200 hover:border-brand-200'}`}
+                        >
+                            <Bookmark size={18} fill={user?.savedNewsIds?.includes(selectedNews.id) ? "currentColor" : "none"}/> 
+                            {user?.savedNewsIds?.includes(selectedNews.id) ? t.saved_to_profile : t.save_to_profile}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
 
 const EventsView = () => {
-  const { lang, events } = useContext(AppContext);
+  const { lang, events, user, toggleSavedEvent, setView } = useContext(AppContext);
   const t = TRANSLATIONS[lang];
+  const [searchTerm, setSearchTerm] = useState('');
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  const handleShare = async (item: EventItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const title = lang === 'ar' ? item.title_ar : item.title_en;
+    const url = window.location.href;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text: lang === 'ar' ? item.description_ar : item.description_en, url });
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      navigator.clipboard.writeText(url);
+      showToast(t.share_success);
+    }
+  };
+
+  const handleSave = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+        setView('login');
+        return;
+    }
+    toggleSavedEvent(id);
+    const isSaved = user.savedEventIds?.includes(id);
+    showToast(isSaved ? 'Removed from saved' : t.saved_to_profile);
+  };
+
+  const filteredEvents = events.filter(item => {
+    const term = searchTerm.toLowerCase();
+    const title = (lang === 'ar' ? item.title_ar : item.title_en).toLowerCase();
+    const location = (lang === 'ar' ? item.location_ar : item.location_en).toLowerCase();
+    return title.includes(term) || location.includes(term);
+  });
+
   return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="text-center mb-16"><h3 className="text-4xl font-bold text-stone-900 mt-2">{t.upcoming_events}</h3><div className="w-24 h-1 bg-brand-500 mx-auto mt-4 rounded-full"></div></div>
-      <div className="flex flex-col gap-8 max-w-4xl mx-auto">
-        {events.map(event => (
-          <div key={event.id} className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden flex flex-col md:flex-row hover:shadow-md transition">
-            <div className="md:w-1/3 relative h-64 md:h-auto"><img src={event.imageUrl} className="w-full h-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent md:hidden"></div></div>
-            <div className="p-8 md:w-2/3 flex flex-col justify-center">
-              <div className="flex items-center gap-4 text-sm text-brand-600 font-bold mb-3"><span className="flex items-center gap-1"><Calendar size={16}/> {event.date}</span><span className="flex items-center gap-1"><MapPin size={16}/> {lang === 'ar' ? event.location_ar : event.location_en}</span></div>
-              <h4 className="text-2xl font-bold text-stone-900 mb-4">{lang === 'ar' ? event.title_ar : event.title_en}</h4>
-              <p className="text-stone-600 leading-relaxed mb-6">{lang === 'ar' ? event.description_ar : event.description_en}</p>
-              <button className="self-start border border-stone-300 px-6 py-2 rounded-lg hover:bg-stone-900 hover:text-white transition text-sm font-bold">{t.read_more}</button>
-            </div>
+    <div className="min-h-screen bg-stone-50/50">
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed top-20 right-4 rtl:left-4 rtl:right-auto z-[150] bg-stone-900 text-white px-6 py-3 rounded-xl shadow-2xl animate-in fade-in slide-in-from-top-4 flex items-center gap-3">
+          <Check size={18} className="text-green-500" />
+          <span className="font-bold text-sm">{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Hero Header with Integrated Search */}
+      <div className="bg-brand-900 text-white py-24 relative overflow-visible">
+          <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'url(https://www.transparenttextures.com/patterns/pinstripe-light.png)'}}></div>
+          <div className="container mx-auto px-4 relative z-10 text-center">
+              <span className="inline-block py-1 px-3 rounded-full bg-white/10 border border-white/20 text-brand-200 text-xs font-bold uppercase tracking-widest mb-4">Engage & Participate</span>
+              <h1 className="text-4xl md:text-5xl font-black mb-6">{t.upcoming_events}</h1>
+              <p className="text-brand-100/70 max-w-2xl mx-auto text-lg mb-12">Discover workshops, exhibitions, and corporate gatherings organized by Al-Shifa Mills.</p>
+              
+              {/* Floating Search Bar */}
+              <div className="max-w-2xl mx-auto relative transform translate-y-8 z-20">
+                <div className="bg-white rounded-full shadow-2xl p-2 flex items-center border border-stone-100">
+                    <div className="pl-4 rtl:pr-4 rtl:pl-0 text-stone-400">
+                        <Search size={24} />
+                    </div>
+                    <input 
+                        type="text" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder={t.search_events_placeholder}
+                        className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-stone-800 text-lg font-medium placeholder:text-stone-300 w-full"
+                    />
+                    <button className="bg-brand-600 hover:bg-brand-700 text-white px-8 py-3 rounded-full font-bold transition duration-300 shadow-lg shadow-brand-600/20">
+                        {t.search}
+                    </button>
+                </div>
+              </div>
           </div>
-        ))}
+      </div>
+
+      <div className="container mx-auto px-4 pt-24 pb-16">
+        {filteredEvents.length === 0 ? (
+            <div className="text-center py-20 opacity-50">
+                <Search size={64} className="mx-auto mb-4 text-stone-300"/>
+                <p className="text-xl font-bold text-stone-400">No events found for "{searchTerm}"</p>
+            </div>
+        ) : (
+            <div className="flex flex-col gap-10 max-w-5xl mx-auto">
+            {filteredEvents.map(event => {
+                const isSaved = user?.savedEventIds?.includes(event.id);
+                return (
+                    <div key={event.id} className="group bg-white rounded-3xl shadow-sm border border-stone-200 overflow-hidden flex flex-col md:flex-row hover:shadow-2xl hover:-translate-y-1 transition-all duration-500">
+                        <div className="md:w-2/5 relative h-64 md:h-auto overflow-hidden">
+                            <img src={event.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
+                            
+                            {/* Actions overlay on image for mobile */}
+                            <div className="absolute top-4 left-4 flex gap-2">
+                                <button 
+                                    onClick={(e) => handleSave(event.id, e)}
+                                    className={`p-2.5 rounded-full backdrop-blur-md shadow-lg transition duration-300 ${isSaved ? 'bg-brand-600 text-white' : 'bg-white/90 text-stone-500 hover:text-brand-600'}`}
+                                >
+                                    <Bookmark size={18} fill={isSaved ? "currentColor" : "none"} />
+                                </button>
+                                <button 
+                                    onClick={(e) => handleShare(event, e)}
+                                    className="p-2.5 rounded-full bg-white/90 backdrop-blur-md text-stone-500 hover:text-brand-600 shadow-lg transition duration-300"
+                                >
+                                    <Share2 size={18} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="p-8 md:p-12 md:w-3/5 flex flex-col justify-center">
+                            <div className="flex flex-wrap items-center gap-4 text-sm font-bold mb-6">
+                                <span className="flex items-center gap-1.5 text-brand-600 bg-brand-50 px-3 py-1.5 rounded-xl border border-brand-100">
+                                    <Calendar size={16}/> {event.date}
+                                </span>
+                                <span className="flex items-center gap-1.5 text-stone-500 bg-stone-50 px-3 py-1.5 rounded-xl border border-stone-100">
+                                    <MapPin size={16}/> {lang === 'ar' ? event.location_ar : event.location_en}
+                                </span>
+                            </div>
+                            <h4 className="text-3xl font-black text-stone-900 mb-4 group-hover:text-brand-600 transition leading-tight">{lang === 'ar' ? event.title_ar : event.title_en}</h4>
+                            <p className="text-stone-500 leading-loose mb-8 text-lg">{lang === 'ar' ? event.description_ar : event.description_en}</p>
+                            <div className="flex items-center justify-between mt-auto">
+                                <button className="bg-stone-900 text-white px-8 py-3 rounded-xl hover:bg-brand-600 transition text-sm font-bold shadow-lg shadow-stone-900/10">
+                                    {t.read_more}
+                                </button>
+                                <div className="hidden md:flex items-center gap-2">
+                                    <button 
+                                        onClick={(e) => handleSave(event.id, e)}
+                                        className={`flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-xl transition ${isSaved ? 'text-brand-600 bg-brand-50' : 'text-stone-400 hover:text-brand-600 hover:bg-stone-50'}`}
+                                    >
+                                        <Bookmark size={18} fill={isSaved ? "currentColor" : "none"}/>
+                                        {isSaved ? t.saved_to_profile : t.save_to_profile}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+            </div>
+        )}
       </div>
     </div>
   );
 };
 
 const CareersView = () => {
-  const { lang, jobs, addJobApplication } = useContext(AppContext);
+  const { lang, jobs, addJobApplication, addNotification } = useContext(AppContext);
   const t = TRANSLATIONS[lang];
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
   const [appSent, setAppSent] = useState(false);
@@ -926,6 +1326,14 @@ const CareersView = () => {
     };
 
     addJobApplication(newApp);
+    addNotification({
+        id: Date.now().toString(),
+        type: 'job',
+        message: lang === 'ar' ? `طلب توظيف جديد من: ${formData.name}` : `New Job App from: ${formData.name}`,
+        time: 'Just now',
+        read: false
+    });
+
     setAppSent(true); 
     
     setTimeout(() => { 
@@ -1083,11 +1491,41 @@ const ProductList = () => {
 };
 
 const CartView = () => {
-  const { lang, cart, removeFromCart, updateQuantity, clearCart, setView } = useContext(AppContext);
+  const { lang, cart, removeFromCart, updateQuantity, clearCart, setView, addOrder, addNotification } = useContext(AppContext);
   const t = TRANSLATIONS[lang];
   const [submitted, setSubmitted] = useState(false);
-  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); FirebaseService.submitOrder({ cart, date: new Date() }); setSubmitted(true); setTimeout(() => { clearCart(); setSubmitted(false); }, 3000); };
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const cartTotal = cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
+
+  const handleSubmit = (e: React.FormEvent) => { 
+      e.preventDefault(); 
+      const form = e.target as HTMLFormElement;
+      const formData = new FormData(form);
+      
+      const newOrder: Order = {
+          id: Math.random().toString(36).substr(2, 9),
+          items: [...cart],
+          total: cartTotal,
+          customerName: formData.get('name') as string,
+          customerEmail: formData.get('email') as string,
+          date: new Date().toISOString().split('T')[0],
+          status: 'pending',
+          location: 'Riyadh' // Mock location based on "user region"
+      };
+
+      addOrder(newOrder);
+      addNotification({
+          id: Date.now().toString(),
+          type: 'order',
+          message: lang === 'ar' ? `طلب جديد من ${newOrder.customerName} بقيمة ${newOrder.total} ر.س` : `New order from ${newOrder.customerName}: ${newOrder.total} SAR`,
+          time: 'Just now',
+          read: false
+      });
+
+      FirebaseService.submitOrder({ cart, date: new Date() }); 
+      setSubmitted(true); 
+      setTimeout(() => { clearCart(); setSubmitted(false); }, 3000); 
+  };
 
   if (submitted) return (<div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-4 animate-in fade-in"><div className="bg-green-100 text-green-600 p-8 rounded-full mb-8 shadow-inner"><CheckCircle size={80} /></div><h3 className="text-4xl font-bold text-stone-900 mb-4">{t.order_success}</h3><p className="text-stone-500 text-lg mb-8">Ref ID: #{Math.floor(Math.random() * 1000000)}</p><button onClick={() => setView('products')} className="bg-stone-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-stone-800 transition">{t.cart_continue}</button></div>);
   if (cart.length === 0) return (<div className="min-h-[60vh] flex flex-col items-center justify-center text-stone-400"><div className="bg-stone-100 p-10 rounded-full mb-6"><ShoppingCart size={80} className="text-stone-300" /></div><h3 className="text-3xl font-bold text-stone-300 mb-4">{t.cart_empty}</h3><button onClick={() => setView('products')} className="mt-4 text-brand-600 font-bold hover:underline flex items-center gap-2">{t.cart_continue} {lang === 'ar' ? <ChevronLeft size={18}/> : <ChevronRight size={18}/>}</button></div>);
@@ -1113,11 +1551,11 @@ const CartView = () => {
         <div className="lg:col-span-4 relative">
             <div className="bg-stone-50 p-8 rounded-2xl border border-stone-200 sticky top-24 shadow-lg shadow-stone-200/50">
                 <h3 className="text-2xl font-bold text-stone-900 mb-6 flex items-center gap-2"><Package className="text-brand-600"/> {t.order_summary}</h3>
-                <div className="space-y-4 mb-8"><div className="flex justify-between text-stone-600"><span>{t.items_count}</span><span className="font-bold">{totalItems}</span></div><div className="flex justify-between text-stone-900 text-lg font-bold"><span>Total</span><span>{cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0).toFixed(2)} {t.currency}</span></div><div className="h-px bg-stone-200"></div></div>
+                <div className="space-y-4 mb-8"><div className="flex justify-between text-stone-600"><span>{t.items_count}</span><span className="font-bold">{totalItems}</span></div><div className="flex justify-between text-stone-900 text-lg font-bold"><span>Total</span><span>{cartTotal.toFixed(2)} {t.currency}</span></div><div className="h-px bg-stone-200"></div></div>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-1"><label className="text-xs font-bold text-stone-500 uppercase">{t.name}</label><input required type="text" className="w-full bg-white border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition font-medium" placeholder="Ex: John Doe"/></div>
-                    <div className="space-y-1"><label className="text-xs font-bold text-stone-500 uppercase">{t.email}</label><input required type="email" className="w-full bg-white border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition font-medium text-start" dir="ltr" placeholder="Ex: john@example.com"/></div>
-                    <div className="space-y-1"><label className="text-xs font-bold text-stone-500 uppercase">{t.phone}</label><input required type="tel" className="w-full bg-white border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition font-medium text-start" dir="ltr" placeholder="+966..."/></div>
+                    <div className="space-y-1"><label className="text-xs font-bold text-stone-500 uppercase">{t.name}</label><input name="name" required type="text" className="w-full bg-white border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition font-medium" placeholder="Ex: John Doe"/></div>
+                    <div className="space-y-1"><label className="text-xs font-bold text-stone-500 uppercase">{t.email}</label><input name="email" required type="email" className="w-full bg-white border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition font-medium text-start" dir="ltr" placeholder="Ex: john@example.com"/></div>
+                    <div className="space-y-1"><label className="text-xs font-bold text-stone-500 uppercase">{t.phone}</label><input name="phone" required type="tel" className="w-full bg-white border border-stone-300 p-3 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition font-medium text-start" dir="ltr" placeholder="+966..."/></div>
                     <button type="submit" className="w-full bg-stone-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-brand-600 hover:shadow-lg hover:shadow-brand-600/20 transition duration-300 mt-4 flex items-center justify-center gap-2 group">{t.confirm_request} {lang === 'ar' ? <ChevronLeft className="group-hover:-translate-x-1 transition"/> : <ChevronRight className="group-hover:translate-x-1 transition"/>}</button>
                     <div className="flex items-center justify-center gap-2 text-xs text-stone-400 mt-4"><ShieldCheck size={14} className="text-green-500"/><span>{t.secure_request}</span></div>
                 </form>
@@ -1132,7 +1570,7 @@ const AdminPanel = () => {
   const { 
     lang, products, setProducts, news, setNews, events, setEvents, jobs, setJobs, 
     usersList, setUsersList, messages, setMessages, pageSettings, setPageSettings, 
-    jobApplications, markCVDownloaded, notifications, addNotification, logout 
+    jobApplications, markCVDownloaded, notifications, logout, orders, pageViews
   } = useContext(AppContext);
   const t = TRANSLATIONS[lang];
   const [tab, setTab] = useState('dashboard');
@@ -1143,44 +1581,41 @@ const AdminPanel = () => {
   const [viewingUser, setViewingUser] = useState<UserProfile | null>(null);
   const [viewingApplicationsForJobId, setViewingApplicationsForJobId] = useState<string | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [visitorCount, setVisitorCount] = useState(1243);
+
+  // --- Real-time Stats Calculation ---
+  // 1. Total Sales
+  const totalSales = useMemo(() => orders.reduce((acc, order) => acc + order.total, 0), [orders]);
+  
+  // 2. Top Selling Products
+  const topSelling = useMemo(() => {
+      const productCounts: {[key: string]: {count: number, name: string}} = {};
+      orders.forEach(order => {
+          order.items.forEach(item => {
+              const name = lang === 'ar' ? item.name_ar : item.name_en;
+              if (!productCounts[name]) productCounts[name] = { count: 0, name: name };
+              productCounts[name].count += item.quantity;
+          });
+      });
+      return Object.values(productCounts).sort((a, b) => b.count - a.count).slice(0, 3);
+  }, [orders, lang]);
+
+  // 3. Sales Distribution (Simulated by order size)
+  const salesDistribution = useMemo(() => {
+      const dist = { bakeries: 0, home: 0, export: 0 };
+      orders.forEach(order => {
+          if (order.total > 1000) dist.export++;
+          else if (order.total > 200) dist.bakeries++;
+          else dist.home++;
+      });
+      const total = orders.length || 1;
+      return {
+          bakeries: Math.round((dist.bakeries / total) * 100),
+          home: Math.round((dist.home / total) * 100),
+          export: Math.round((dist.export / total) * 100)
+      };
+  }, [orders]);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
-
-  // --- Real-time Simulation Effects ---
-  useEffect(() => {
-    // 1. Simulate Live Visitor fluctuations
-    const visitorInterval = setInterval(() => {
-        setVisitorCount(prev => prev + Math.floor(Math.random() * 5) - 2);
-    }, 5000);
-
-    // 2. Simulate Random Notifications (Simulating live site activity)
-    const notificationInterval = setInterval(() => {
-        const randomEvent = Math.random();
-        if (randomEvent > 0.7) {
-            const types = ['order', 'comment', 'job'] as const;
-            const type = types[Math.floor(Math.random() * types.length)];
-            let message = '';
-            if (type === 'order') message = lang === 'ar' ? 'تم استلام طلب شراء جديد بقيمة 450 ر.س' : 'New order received: 450 SAR';
-            if (type === 'comment') message = lang === 'ar' ? 'تعليق جديد على خبر: افتتاح خط الإنتاج' : 'New comment on: Production Line Launch';
-            if (type === 'job') message = lang === 'ar' ? 'تم استلام طلب توظيف جديد: مهندس جودة' : 'New job application: Quality Engineer';
-            
-            addNotification({
-                id: Date.now().toString(),
-                type,
-                message,
-                time: 'Just now',
-                read: false
-            });
-            showToast(message); // Also show as toast
-        }
-    }, 15000); // Every 15 seconds
-
-    return () => {
-        clearInterval(visitorInterval);
-        clearInterval(notificationInterval);
-    };
-  }, [lang, addNotification]);
   
   // Handlers for generic CRUD
   const handleEdit = (item: any) => { setEditingItem(item); setFormData({...item}); setIsModalOpen(true); };
@@ -1232,10 +1667,9 @@ const AdminPanel = () => {
 
   const handleDownloadCV = (app: JobApplication) => {
       markCVDownloaded(app.id);
-      // Simulate download link click
       const link = document.createElement('a');
       link.href = app.cvUrl;
-      link.download = `CV_${app.applicantName.replace(/\s+/g, '_')}.pdf`; // Mock extension
+      link.download = `CV_${app.applicantName.replace(/\s+/g, '_')}.pdf`; 
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1313,7 +1747,7 @@ const AdminPanel = () => {
             <div className="animate-in fade-in">
                 <div className="flex justify-between items-end mb-8">
                     <div><h2 className="text-3xl font-bold text-stone-800 flex items-center gap-3"><LayoutDashboard className="text-brand-600"/> {t.dashboard_overview}</h2><p className="text-stone-500 mt-1">{t.analytics_report}</p></div>
-                    <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl font-bold animate-pulse"><Activity size={18}/> {t.live_visitors}: {visitorCount}</div>
+                    <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl font-bold"><Activity size={18}/> {t.live_visitors}: {pageViews}</div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -1340,13 +1774,17 @@ const AdminPanel = () => {
                             <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'radial-gradient(circle, #444 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
                             {/* World Map SVG Silhouette */}
                             <svg viewBox="0 0 1000 500" className="w-full h-full opacity-30 fill-stone-500"><path d="M842,168c1.8,-1.8 1.8,-3.6 2.7,-3.6c0.9,0 2.7,2.7 3.6,3.6c0.9,0.9 2.7,2.7 3.6,3.6c0.9,0.9 2.7,0.9 3.6,2.7c0.9,1.8 0.9,3.6 -0.9,4.5c-1.8,0.9 -1.8,2.7 -2.7,4.5c-0.9,1.8 -1.8,2.7 -3.6,3.6c-1.8,0.9 -3.6,0 -4.5,-1.8c-0.9,-1.8 -2.7,-2.7 -3.6,-4.5c-0.9,-1.8 -0.9,-3.6 0,-5.4c0.9,-1.8 0.9,-3.6 1.8,-7.2ZM195,168c1.8,-2.7 4.5,-2.7 6.3,-2.7c1.8,0 2.7,1.8 3.6,3.6c0.9,1.8 1.8,3.6 1.8,5.4c0,1.8 0,3.6 -0.9,5.4c-0.9,1.8 -2.7,2.7 -4.5,2.7c-1.8,0 -3.6,-1.8 -4.5,-3.6c-0.9,-1.8 -1.8,-2.7 -1.8,-5.4c0,-2.7 0,-4.5 0,-5.4ZM532,152c2.7,-2.7 5.4,-2.7 8.1,-2.7c2.7,0 3.6,2.7 4.5,5.4c0.9,2.7 1.8,5.4 1.8,7.2c0,1.8 -0.9,3.6 -2.7,5.4c-1.8,1.8 -3.6,2.7 -6.3,2.7c-2.7,0 -4.5,-1.8 -5.4,-4.5c-0.9,-2.7 -1.8,-3.6 -1.8,-6.3c0,-2.7 0,-4.5 1.8,-7.2ZM620,192c3.6,-1.8 7.2,-1.8 9.9,-0.9c2.7,0.9 4.5,3.6 5.4,6.3c0.9,2.7 0.9,5.4 0,8.1c-0.9,2.7 -2.7,4.5 -5.4,5.4c-2.7,0.9 -5.4,0.9 -8.1,-0.9c-2.7,-1.8 -4.5,-3.6 -5.4,-6.3c-0.9,-2.7 -0.9,-5.4 0.9,-8.1c1.8,-2.7 1.8,-3.6 2.7,-3.6Z" /></svg>
-                            {/* Pulsing Dots */}
-                            <div className="absolute top-[40%] left-[55%] w-3 h-3 bg-brand-500 rounded-full animate-ping" title="Riyadh"></div>
-                            <div className="absolute top-[40%] left-[55%] w-2 h-2 bg-brand-400 rounded-full"></div>
-                            
-                            <div className="absolute top-[35%] left-[52%] w-2 h-2 bg-blue-500 rounded-full animate-ping" style={{animationDelay: '0.5s'}} title="Cairo"></div>
-                            <div className="absolute top-[38%] left-[58%] w-2 h-2 bg-green-500 rounded-full animate-ping" style={{animationDelay: '1s'}} title="Dubai"></div>
-                            <div className="absolute top-[32%] left-[48%] w-2 h-2 bg-orange-500 rounded-full animate-ping" style={{animationDelay: '1.5s'}} title="Istanbul"></div>
+                            {/* Visualizing Latest Orders */}
+                            {orders.slice(-5).map((order, i) => (
+                                <div key={order.id} 
+                                     className="absolute w-3 h-3 bg-brand-500 rounded-full animate-ping" 
+                                     style={{
+                                         top: i % 2 === 0 ? '40%' : '35%', 
+                                         left: i % 2 === 0 ? '55%' : '52%', 
+                                         animationDelay: `${i * 0.5}s`
+                                     }} 
+                                     title={`Order from ${order.customerName}`}></div>
+                            ))}
                         </div>
                         <div className="flex justify-between text-xs text-stone-400 mt-4">
                             <span>Active Regions: Middle East, North Africa</span>
@@ -1358,10 +1796,10 @@ const AdminPanel = () => {
                     <div className="bg-stone-50 rounded-2xl p-6 border border-stone-200">
                         <h3 className="font-bold text-lg mb-6 text-stone-800 flex items-center gap-2"><PieChart size={20} className="text-stone-400"/> {t.sales_distribution}</h3>
                         <div className="flex items-end justify-between h-40 gap-2 mb-4 px-2">
-                            {/* CSS Bar Chart */}
-                            <div className="w-full bg-brand-200 rounded-t-lg relative group h-[70%]" title="Bakeries"><div className="absolute -top-6 w-full text-center text-xs font-bold text-brand-600">70%</div></div>
-                            <div className="w-full bg-blue-200 rounded-t-lg relative group h-[20%]" title="Household"><div className="absolute -top-6 w-full text-center text-xs font-bold text-blue-600">20%</div></div>
-                            <div className="w-full bg-orange-200 rounded-t-lg relative group h-[10%]" title="Export"><div className="absolute -top-6 w-full text-center text-xs font-bold text-orange-600">10%</div></div>
+                            {/* Dynamic Bar Chart */}
+                            <div className="w-full bg-brand-200 rounded-t-lg relative group transition-all duration-1000" style={{height: `${salesDistribution.bakeries || 5}%`}} title="Bakeries"><div className="absolute -top-6 w-full text-center text-xs font-bold text-brand-600">{salesDistribution.bakeries}%</div></div>
+                            <div className="w-full bg-blue-200 rounded-t-lg relative group transition-all duration-1000" style={{height: `${salesDistribution.home || 5}%`}} title="Household"><div className="absolute -top-6 w-full text-center text-xs font-bold text-blue-600">{salesDistribution.home}%</div></div>
+                            <div className="w-full bg-orange-200 rounded-t-lg relative group transition-all duration-1000" style={{height: `${salesDistribution.export || 5}%`}} title="Export"><div className="absolute -top-6 w-full text-center text-xs font-bold text-orange-600">{salesDistribution.export}%</div></div>
                         </div>
                         <div className="flex justify-between text-xs font-bold text-stone-500 uppercase text-center">
                             <span className="w-full">Bakeries</span>
@@ -1370,11 +1808,17 @@ const AdminPanel = () => {
                         </div>
                         <div className="mt-6 pt-6 border-t border-stone-200">
                             <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">{t.top_selling}</h4>
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center text-sm font-bold"><span className="text-stone-700">Ras Al-Thawr (25kg)</span><span className="text-brand-600">120k SAR</span></div>
-                                <div className="w-full bg-stone-200 h-1.5 rounded-full"><div className="bg-brand-500 h-1.5 rounded-full w-[80%]"></div></div>
-                                <div className="flex justify-between items-center text-sm font-bold"><span className="text-stone-700">Al-Jawhara (25kg)</span><span className="text-brand-600">85k SAR</span></div>
-                                <div className="w-full bg-stone-200 h-1.5 rounded-full"><div className="bg-brand-500 h-1.5 rounded-full w-[60%]"></div></div>
+                            <div className="space-y-3">
+                                {topSelling.length > 0 ? topSelling.map((p, idx) => (
+                                    <div key={idx}>
+                                        <div className="flex justify-between items-center text-sm font-bold mb-1"><span className="text-stone-700">{p.name}</span><span className="text-brand-600">{p.count} units</span></div>
+                                        <div className="w-full bg-stone-200 h-1.5 rounded-full"><div className="bg-brand-500 h-1.5 rounded-full" style={{width: `${Math.min(100, (p.count / (topSelling[0].count || 1)) * 100)}%`}}></div></div>
+                                    </div>
+                                )) : <p className="text-xs text-stone-400 italic">No sales data yet</p>}
+                            </div>
+                            <div className="mt-4 text-center">
+                                <span className="text-xs font-bold text-stone-500">Total Revenue: </span>
+                                <span className="text-lg font-bold text-brand-600">{totalSales.toFixed(2)} {t.currency}</span>
                             </div>
                         </div>
                     </div>
@@ -1712,13 +2156,22 @@ const App = () => {
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [pageSettings, setPageSettings] = useState<PageSettings>({});
   
-  // New State for Job Applications & Notifications
+  // New State for Job Applications & Notifications & Orders & PageViews
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [pageViews, setPageViews] = useState<number>(0);
   
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => { document.documentElement.lang = lang; document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; }, [lang]);
+
+  // Track Page Views
+  useEffect(() => {
+      if (isLoaded) {
+          setPageViews(prev => prev + 1);
+      }
+  }, [view, isLoaded]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -1731,6 +2184,8 @@ const App = () => {
       const storedSettings = localStorage.getItem('afm_settings');
       const storedApplications = localStorage.getItem('afm_applications');
       const storedNotifications = localStorage.getItem('afm_notifications');
+      const storedOrders = localStorage.getItem('afm_orders');
+      const storedPageViews = localStorage.getItem('afm_pageviews');
 
       if (storedProducts) {
           const parsedProducts = JSON.parse(storedProducts);
@@ -1749,6 +2204,8 @@ const App = () => {
       if (storedSettings) setPageSettings(JSON.parse(storedSettings)); else setPageSettings(INITIAL_PAGE_SETTINGS);
       if (storedApplications) setJobApplications(JSON.parse(storedApplications));
       if (storedNotifications) setNotifications(JSON.parse(storedNotifications));
+      if (storedOrders) setOrders(JSON.parse(storedOrders)); else setOrders(INITIAL_ORDERS);
+      if (storedPageViews) setPageViews(Number(storedPageViews)); else setPageViews(1240); // Start with a base number
 
       setIsLoaded(true);
     };
@@ -1764,12 +2221,14 @@ const App = () => {
   useEffect(() => { if (isLoaded) localStorage.setItem('afm_settings', JSON.stringify(pageSettings)); }, [pageSettings, isLoaded]);
   useEffect(() => { if (isLoaded) localStorage.setItem('afm_applications', JSON.stringify(jobApplications)); }, [jobApplications, isLoaded]);
   useEffect(() => { if (isLoaded) localStorage.setItem('afm_notifications', JSON.stringify(notifications)); }, [notifications, isLoaded]);
+  useEffect(() => { if (isLoaded) localStorage.setItem('afm_orders', JSON.stringify(orders)); }, [orders, isLoaded]);
+  useEffect(() => { if (isLoaded) localStorage.setItem('afm_pageviews', pageViews.toString()); }, [pageViews, isLoaded]);
 
   const addToCart = (p: Product, quantity: number = 1) => { setCart(prev => { const existing = prev.find(item => item.id === p.id); if (existing) { return prev.map(item => item.id === p.id ? { ...item, quantity: item.quantity + quantity } : item); } return [...prev, { ...p, quantity }]; }); alert(lang === 'ar' ? 'تمت الإضافة للسلة' : 'Added to cart'); };
   const updateQuantity = (id: string, delta: number) => { setCart(prev => prev.map(item => { if (item.id === id) { const newQty = Math.max(1, item.quantity + delta); return { ...item, quantity: newQty }; } return item; })); };
   const removeFromCart = (id: string) => { setCart(cart.filter(c => c.id !== id)); };
   const clearCart = () => setCart([]);
-  const login = (role: string) => { setUser({ name: 'Admin User', role, email: 'mohemadmuzamil@gmail.com' }); setView('admin'); };
+  const login = (role: string) => { setUser({ name: 'Admin User', role, email: 'mohemadmuzamil@gmail.com', savedNewsIds: [], savedEventIds: [] }); setView('admin'); };
   const logout = () => { setUser(null); setView('home'); };
   
   const addJobApplication = (app: JobApplication) => { setJobApplications(prev => [...prev, app]); };
@@ -1777,6 +2236,8 @@ const App = () => {
   
   const addNotification = (note: NotificationItem) => { setNotifications(prev => [note, ...prev]); };
   const clearNotifications = () => { setNotifications([]); };
+  
+  const addOrder = (order: Order) => { setOrders(prev => [order, ...prev]); };
 
   const setTheme = (themeName: ThemeName) => {
     const theme = THEMES[themeName];
@@ -1786,12 +2247,42 @@ const App = () => {
     });
   };
 
+  const toggleSavedNews = (id: string) => {
+      if (!user) return;
+      const currentSaved = user.savedNewsIds || [];
+      let newSaved;
+      if (currentSaved.includes(id)) {
+          newSaved = currentSaved.filter((sid: string) => sid !== id);
+      } else {
+          newSaved = [...currentSaved, id];
+      }
+      const updatedUser = { ...user, savedNewsIds: newSaved };
+      setUser(updatedUser);
+      setUsersList(usersList.map(u => u.email === user.email ? { ...u, savedNewsIds: newSaved } : u));
+  };
+
+  const toggleSavedEvent = (id: string) => {
+      if (!user) return;
+      const currentSaved = user.savedEventIds || [];
+      let newSaved;
+      if (currentSaved.includes(id)) {
+          newSaved = currentSaved.filter((sid: string) => sid !== id);
+      } else {
+          newSaved = [...currentSaved, id];
+      }
+      const updatedUser = { ...user, savedEventIds: newSaved };
+      setUser(updatedUser);
+      setUsersList(usersList.map(u => u.email === user.email ? { ...u, savedEventIds: newSaved } : u));
+  };
+
   const contextValue = { 
     lang, setLang, view, setView, cart, addToCart, updateQuantity, removeFromCart, clearCart, user, login, logout, 
     products, setProducts, news, setNews, events, setEvents, jobs, setJobs, setTheme,
     usersList, setUsersList, messages, setMessages, pageSettings, setPageSettings,
     jobApplications, addJobApplication, markCVDownloaded,
-    notifications, addNotification, clearNotifications
+    notifications, addNotification, clearNotifications,
+    orders, addOrder, pageViews,
+    toggleSavedNews, toggleSavedEvent
   };
 
   return (
@@ -1830,6 +2321,13 @@ const App = () => {
                              status: 'new' as const
                          };
                          setMessages([...messages, newMsg]);
+                         addNotification({
+                             id: Date.now().toString(),
+                             type: 'comment',
+                             message: lang === 'ar' ? `رسالة جديدة من: ${newMsg.name}` : `New message from: ${newMsg.name}`,
+                             time: 'Just now',
+                             read: false
+                         });
                          alert(lang === 'ar' ? 'تم الإرسال بنجاح' : 'Sent Successfully');
                          form.reset();
                      }}>
